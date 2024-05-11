@@ -6,13 +6,13 @@ This FastAPI application utilizes advanced face recognition techniques combined 
 
 ### Prerequisites
 
-Ensure you have Python 3.6+ installed on your system. You also need to have pip available for installing Python packages.
+Ensure you have Python 3.6+ installed on your system. You also need to have pip available for installing Python packages. Moreover you need Cmake. If you use VSCode ensure you have the C++ support installed.
 
 ### Installing Dependencies
 
 Install all necessary Python packages by running the following command:
 
-    pip install fastapi uvicorn sqlalchemy opencv-python-headless numpy python-multipart face_recognition
+    pip install fastapi uvicorn sqlalchemy opencv-python opencv-python-headless numpy python-multipart face_recognition jinja2
 
 These packages include FastAPI for the web framework, Uvicorn for serving the application, SQLAlchemy for database operations, OpenCV for image processing, and other supporting libraries.
 
