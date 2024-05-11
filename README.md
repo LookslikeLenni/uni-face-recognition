@@ -12,7 +12,7 @@ Ensure you have Python 3.6+ installed on your system. You also need to have pip 
 
 Install all necessary Python packages by running the following command:
 
-    pip install fastapi uvicorn sqlalchemy opencv-python-headless numpy python-multipart
+    pip install fastapi uvicorn sqlalchemy opencv-python-headless numpy python-multipart face_recognition
 
 These packages include FastAPI for the web framework, Uvicorn for serving the application, SQLAlchemy for database operations, OpenCV for image processing, and other supporting libraries.
 
