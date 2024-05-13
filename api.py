@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException, Depends, UploadFile, File, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, Text
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.types import TypeDecorator, TEXT
@@ -33,6 +34,14 @@ scale = 1
 templates = Jinja2Templates(directory=".")
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[""],
+    allow_credentials=True,
+    allow_methods=[""],
+    allow_headers=["*"],
+)
 
 # Database configuration
 DATABASE_URL = "sqlite:///./user.db"
