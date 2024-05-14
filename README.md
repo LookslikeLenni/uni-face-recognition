@@ -24,7 +24,7 @@ This application uses SQLite as the database, which is a lightweight disk-based 
 
 To start the server, use the following command:
 
-    python3 api.py
+    uvicorn api:app --reload   or python3 api.py
 
 ## API Endpoints
 
