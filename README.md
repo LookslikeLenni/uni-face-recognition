@@ -1,6 +1,7 @@
 # Facial Recognition API
 
 This FastAPI application utilizes advanced face recognition techniques combined with a robust back-end system to manage user data and images. It supports a variety of operations, including user creation, image uploading, and retrieval of user details, making it versatile for applications requiring biometric functionality.
+DeepFace is used for running the Face models and encoding Face Images (a GPU is required)
 
 ## Installation and Setup
 
@@ -12,7 +13,7 @@ Ensure you have Python 3.6+ installed on your system. You also need to have pip 
 
 Install all necessary Python packages by running the following command:
 
-    pip install fastapi uvicorn sqlalchemy opencv-python opencv-python-headless numpy python-multipart cmake jinja2 face_recognition 
+    pip install fastapi uvicorn sqlalchemy opencv-python opencv-python-headless numpy python-multipart cmake jinja2 deepface tf-keras {tensorflow, tensorflow-metal or tensorflow-gpu} 
 
 These packages include FastAPI for the web framework, Uvicorn for serving the application, SQLAlchemy for database operations, OpenCV for image processing, and other supporting libraries.
 

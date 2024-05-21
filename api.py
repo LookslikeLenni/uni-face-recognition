@@ -2,34 +2,60 @@ from fastapi import FastAPI, Request, HTTPException, Depends, UploadFile, File, 
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Text
+from sqlalchemy import create_engine, Column, Integer, String, Text, func
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.types import TypeDecorator, TEXT
 from sqlalchemy.ext.mutable import MutableList
-from sqlalchemy import func
 from pydantic import BaseModel, Field
 from typing import List
 import base64
 import json
-import time
 from io import BytesIO
 import zipfile
 import uvicorn
-import face_recognition
 from os import listdir
 from os.path import join
 import cv2
 import numpy as np
 
-video_capture = cv2.VideoCapture(0)
+from video_handler import DetectFaces
 
-known_face_encodings = []
-known_face_names = []
-face_locations = []
-face_encodings = []
-face_names = []
+backends = [
+    'opencv', 
+    'ssd', 
+    'dlib', 
+    'mtcnn', 
+    'fastmtcnn',
+    'retinaface', 
+    'mediapipe',
+    'yolov8',
+    'yunet',
+    'centerface',
+]
 
-scale = 1
+metrics = ["cosine", "euclidean", "euclidean_l2"]
+
+models = [
+    "VGG-Face", 
+    "Facenet", 
+    "Facenet512", 
+    "OpenFace", 
+    "DeepFace", 
+    "DeepID", 
+    "ArcFace", 
+    "Dlib", 
+    "SFace",
+    "GhostFaceNet",
+]
+
+rec = DetectFaces(
+        model = 0,
+        metric = 0,
+        backend = 6,
+        cap_dev = 0,
+        normalize = 2,
+        threshold = 0.55
+    )
 
 templates = Jinja2Templates(directory=".")
 
@@ -37,10 +63,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins, adjust as necessary
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Database configuration
@@ -125,90 +151,26 @@ def get_user_name(user_id: int) -> str:
     finally:
         db.close()
 
-def gen_frames(db: Session):
-    prev_frame_time = 0
-    new_frame_time = 0
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    fps = 0
-
+def gen_frames():
+    db = SessionLocal()
     while True:
-        new_frame_time = time.time() 
-        new_fps = 1/(new_frame_time-prev_frame_time) 
-        prev_frame_time = new_frame_time
-        new_fps = int(new_fps) 
-        if(abs(new_fps-fps) > 3):
-          fps = new_fps
+        frame, faces = rec.get_frame()
+        '''
+        for name, face in faces:
+            if(name == "Unknown"):
+                _, buffer = cv2.imencode('.jpg', face)
+                image_data = base64.b64encode(buffer).decode('utf-8')
 
-        ret, frame = video_capture.read()
-        cv2.putText(frame, str(fps), (7, 70), font, 3, (100, 255, 0), 3, cv2.LINE_AA) 
-        if not ret:
-            break
-        else:
-            small_frame = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
-            rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
-            
-            face_locations = face_recognition.face_locations(rgb_small_frame)
-            face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                max_id = db.query(func.max(User.id)).scalar() or 0
+                new_user = User(first_name="Unknown", last_name="", greeting="Automatically added unknown face", images=[image_data])
 
-            for face_encoding, (top, right, bottom, left) in zip(face_encodings, face_locations):
-                matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.6)
-                name = "Unknown"
-                
-                # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-                top *= int(1/scale)
-                right *= int(1/scale)
-                bottom *= int(1/scale)
-                left *= int(1/scale)
-                
-                if True in matches:
-                    best_match_index = np.argmin(face_recognition.face_distance(known_face_encodings, face_encoding))
-                    if matches[best_match_index]:
-                        name = known_face_names[best_match_index]
-                else:
-                    # Save the new user if it's an unknown face
-                    name, face_encoding = add_new_user(face_encoding, frame[top:bottom, left:right], db)
-
-                # Draw the results
-                draw_face_box(frame, top, right, bottom, left, name)
-
-            # Encode frame for streaming
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-def add_new_user(face_encoding, face_image, db: Session):
-    try:
-        _, buffer = cv2.imencode('.jpg', face_image)
-        image_data = base64.b64encode(buffer).decode('utf-8')
-
-        max_id = db.query(func.max(User.id)).scalar() or 0
-        new_user = User(first_name="Unknown", last_name="", greeting="Automatically added unknown face", images=[image_data])
-        
-        db.add(new_user)
-        db.commit()
-
-        new_user_name = get_user_name(max_id+1)
-
-        known_face_encodings.append(face_encoding)
-        known_face_names.append(new_user_name)
-
-        return new_user_name, face_encoding
-    except Exception as e:
-        print(f"Failed to add new user: {str(e)}")
-        return "Failed User", None
-
-def draw_face_box(frame, top, right, bottom, left, name):
-    # Draw a box around the face using the coordinates provided
-    cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-
-    # Draw a label with a name below the face
-    font_scale = 1.5
-    font_thickness = 2
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    text_width, text_height = cv2.getTextSize(name, font, font_scale, font_thickness)[0]
-    box_coords = ((left, bottom + 10), (left + text_width, bottom - text_height - 10))
-    cv2.rectangle(frame, box_coords[0], box_coords[1], (0, 0, 255), cv2.FILLED)
-    cv2.putText(frame, name, (left + 6, bottom - 6), font, font_scale, (255, 255, 255), font_thickness)
+                if(rec.add_image(f'Unknown  {max_id+1}', face) == True):
+                    db.add(new_user)
+                    db.commit()
+        '''
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+        yield (b'--frame\r\n' + b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 # API Endpoints
 @app.post("/users/", response_model=UserOut)
@@ -224,23 +186,25 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 @app.post("/users/{user_id}/images/", response_model=UserOut)
-async def add_image_to_user(user_id: int, image_file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def add_images_to_user(user_id: int, image_files: List[UploadFile] = File(..., multiple=True), db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    if not image_file.content_type.startswith('image/'):
-        raise HTTPException(status_code=400, detail="Invalid file type. Only image files are allowed.")
 
-    image_data = base64.b64encode(await image_file.read()).decode('utf-8')
-    db_user.images.append(image_data)
-    db.commit()
+    for image_file in image_files:
+        if not image_file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="Invalid file type. Only image files are allowed")
 
-    img_bytes = base64.b64decode(image_data)
-    img_array = np.frombuffer(img_bytes, dtype=np.uint8)
-    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-    encoding = face_recognition.face_encodings(img)[0]
-    known_face_encodings.append(encoding)
-    known_face_names.append(get_user_name(user_id))
+        image = await image_file.read()
+        image_data = base64.b64encode(image).decode('utf-8')
+        db_user.images.append(image_data)
+        db.commit()
+
+        img_array = np.frombuffer(image, dtype=np.uint8)
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+        name = get_user_name(user_id)
+        rec.add_image(name, img)
 
     return db_user
 
@@ -252,10 +216,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.delete(db_user)
     db.commit()
     full_name = get_user_name(user_id)
-    for full_name in known_face_names:
-      index = known_face_names.index(full_name)
-      known_face_names.pop(index)
-      known_face_encodings.pop(index)
+    rec.del_user(full_name)
     return {"msg": "User deleted"}
 
 @app.get("/users/", response_model=List[UserOut])
@@ -312,21 +273,14 @@ def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    index = []
-    full_name = get_user_name(user_id)
-    for i, name in enumerate(known_face_names):
-        if(name == full_name):
-          index.append(i)
+  
+    rec.edit_user_name(get_user_name(user_id), f'{user_update.first_name} {user_update.last_name} {user_id}')
 
     user_data = user_update.dict(exclude_unset=True)
     for key, value in user_data.items():
         setattr(db_user, key, value)
     db.commit()
 
-    full_name = get_user_name(user_id)
-    for i in index:
-        known_face_names[i] = full_name
     return db_user
 
 @app.get("/users/{user_id}/images/{image_index}/")
@@ -348,8 +302,8 @@ def get_user_image(user_id: int, image_index: int, db: Session = Depends(get_db)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get('/video_feed')
-def video_feed(db: Session = Depends(get_db)):
-    return StreamingResponse(gen_frames(db), media_type='multipart/x-mixed-replace; boundary=frame')
+def video_feed():
+    return StreamingResponse(gen_frames(), media_type='multipart/x-mixed-replace; boundary=frame')
 
 @app.get('/')
 def index(request: Request):
@@ -359,11 +313,6 @@ if __name__ == "__main__":
 
     images = get_images_from_db()
     for name, img in images:
-        try:
-            encoding = face_recognition.face_encodings(img)[0]
-            known_face_encodings.append(encoding)
-            known_face_names.append(name)
-        except Exception as e:
-            print(f"could not add {name}: {e}") 
+        rec.add_image(name, img)
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
