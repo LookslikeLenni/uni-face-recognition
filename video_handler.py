@@ -2,6 +2,10 @@ from deepface import DeepFace
 import numpy as np
 import cv2
 
+unknown_face_counter = 0
+isknown = False
+counter_threshold = 10
+
 backends = [
     'opencv', 
     'ssd', 
@@ -67,8 +71,8 @@ class DetectFaces:
             self.known_embeddings.append((name, embedding))
             print(f"created: {name} and added image")
             return True
-        except Exception:
-            print("could not add image")
+        except Exception as e:
+            print(f"could not add image: {e}")
             return False
 
     def get_frame(self):
@@ -99,6 +103,7 @@ class DetectFaces:
                 face_region = cv2.convertScaleAbs(face_region, alpha=(255.0))
 
             #face_region = face_region.astype(np.uint8)
+            embedding = None
             try:
                 embedding = DeepFace.represent(
                     img_path=face_region,
@@ -111,6 +116,10 @@ class DetectFaces:
 
             name = 'Unknown'
             color = (0, 0, 255)  # Red for unknown
+
+            global isknown
+            global counter_threshold
+            global unknown_face_counter
 
             for known_name, known_embedding in self.known_embeddings:
                 try:
@@ -128,10 +137,28 @@ class DetectFaces:
                     if(verify['verified'] == True):
                         color = (0, 255, 0)
                         name = known_name
-                        #current_faces.append((name, face_region))
+                        isknown = True
+                        if(verify['distance']>(self.threshold-(self.threshold/2.5))):
+                            current_faces.append((name, face_region))
+                            self.add_image(name, face_region)
+                        else:
+                            current_faces.append((name, None))
                         break
+                    else:
+                      isknown = False
                 except Exception as e:
                     print(f"Error in verification: {e}")
+
+            if(unknown_face_counter >= 0):
+                unknown_face_counter -= 0.2
+
+            if not isknown:
+                print(unknown_face_counter)
+                unknown_face_counter += 1
+
+            if unknown_face_counter >= counter_threshold:
+                unknown_face_counter = 0
+                current_faces.append((name, face_region))
 
             cv2.rectangle(frame_rgb, (x, y), (x + w, y + h), color, 4)
             cv2.putText(frame_rgb, name, (x, y + h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)

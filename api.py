@@ -155,19 +155,28 @@ def gen_frames():
     db = SessionLocal()
     while True:
         frame, faces = rec.get_frame()
-        '''
         for name, face in faces:
             if(name == "Unknown"):
                 _, buffer = cv2.imencode('.jpg', face)
                 image_data = base64.b64encode(buffer).decode('utf-8')
-
                 max_id = db.query(func.max(User.id)).scalar() or 0
                 new_user = User(first_name="Unknown", last_name="", greeting="Automatically added unknown face", images=[image_data])
 
                 if(rec.add_image(f'Unknown  {max_id+1}', face) == True):
                     db.add(new_user)
                     db.commit()
-        '''
+              
+            elif face is not None:
+                for z in name.split():
+                    if z.isdigit():
+                        user_id = z
+                print(f"adding new db image to user {user_id}")
+                db_user = db.query(User).filter(User.id == user_id).first()
+                _, buffer = cv2.imencode('.jpg', face)
+                image_data = base64.b64encode(buffer).decode('utf-8')
+                db_user.images.append(image_data)
+                db.commit()
+
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
         yield (b'--frame\r\n' + b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
