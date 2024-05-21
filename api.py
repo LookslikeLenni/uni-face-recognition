@@ -17,8 +17,22 @@ from os import listdir
 from os.path import join
 import cv2
 import numpy as np
+import sys
 
 from video_handler import DetectFaces
+
+expected_embedding_sizes = {
+    "VGG-Face": 4096,
+    "Facenet": 128,
+    "Facenet512": 512,
+    "OpenFace": 128,
+    "DeepFace": 4096,
+    "DeepID": 160,
+    "ArcFace": 512,
+    "Dlib": 128,
+    "SFace": 512,
+    "GhostFaceNet": 512,
+}
 
 backends = [
     'opencv', 
@@ -48,13 +62,14 @@ models = [
     "GhostFaceNet",
 ]
 
+model_used = 2
+
 rec = DetectFaces(
-        model = 0,
+        model = model_used,
         metric = 0,
-        backend = 6,
+        backend = 8,
         cap_dev = 0,
-        normalize = 2,
-        threshold = 0.55
+        threshold = 0.3
     )
 
 templates = Jinja2Templates(directory=".")
@@ -94,6 +109,7 @@ class User(Base):
     last_name = Column(String(50))
     greeting = Column(Text)
     images = Column(MutableList.as_mutable(Json), default=[])
+    embedding = Column(MutableList.as_mutable(Json), default=[])
 
 Base.metadata.create_all(bind=engine)
 
@@ -157,12 +173,12 @@ def gen_frames():
         frame, faces = rec.get_frame()
         for name, face in faces:
             if(name == "Unknown"):
-                _, buffer = cv2.imencode('.jpg', face)
-                image_data = base64.b64encode(buffer).decode('utf-8')
                 max_id = db.query(func.max(User.id)).scalar() or 0
-                new_user = User(first_name="Unknown", last_name="", greeting="Automatically added unknown face", images=[image_data])
-
-                if(rec.add_image(f'Unknown  {max_id+1}', face) == True):
+                emb = rec.add_image(f'Unknown  {max_id+1}', face)
+                if emb:
+                    _, buffer = cv2.imencode('.jpg', face)
+                    image_data = base64.b64encode(buffer).decode('utf-8')
+                    new_user = User(first_name="Unknown", last_name="", greeting="Automatically added unknown face", images=[image_data], embedding=emb)
                     db.add(new_user)
                     db.commit()
               
@@ -171,11 +187,14 @@ def gen_frames():
                     if z.isdigit():
                         user_id = z
                 print(f"adding new db image to user {user_id}")
-                db_user = db.query(User).filter(User.id == user_id).first()
-                _, buffer = cv2.imencode('.jpg', face)
-                image_data = base64.b64encode(buffer).decode('utf-8')
-                db_user.images.append(image_data)
-                db.commit()
+                try:
+                    db_user = db.query(User).filter(User.id == user_id).first()
+                    _, buffer = cv2.imencode('.jpg', face)
+                    image_data = base64.b64encode(buffer).decode('utf-8')
+                    db_user.images.append(image_data)
+                    db.commit()
+                except Exception as e:
+                    print(f"could not add image to user: {get_user_name(db_user.id)}, {e}")
 
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
@@ -222,10 +241,11 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
+    full_name = get_user_name(db_user.id)
+    rec.del_user(full_name)
+
     db.delete(db_user)
     db.commit()
-    full_name = get_user_name(user_id)
-    rec.del_user(full_name)
     return {"msg": "User deleted"}
 
 @app.get("/users/", response_model=List[UserOut])
@@ -320,8 +340,22 @@ def index(request: Request):
 
 if __name__ == "__main__":
 
-    images = get_images_from_db()
-    for name, img in images:
-        rec.add_image(name, img)
+    db = SessionLocal()
+    users = db.query(User).all()
+    for user in users:
+        if not user.embedding or '-r' in sys.argv or len(user.embedding) != expected_embedding_sizes.get(models[model_used]):
+            images = user.images
+            for image in images:
+                img_bytes = base64.b64decode(image)
+                img_array = np.frombuffer(img_bytes, dtype=np.uint8)
+                img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+                emb = rec.add_image(get_user_name(user.id), img)
+                if(emb):
+                    user.embedding = emb
+                print(f'added image for user: {get_user_name(user.id)}')
+        else:
+            rec.add_embedding(get_user_name(user.id), user.embedding) 
+            print(f'added embedding for user: {get_user_name(user.id)}')
+    db.commit()
 
     uvicorn.run(app, host="0.0.0.0", port=8000)

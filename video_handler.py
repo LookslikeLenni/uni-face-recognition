@@ -19,7 +19,6 @@ backends = [
     'centerface',
 ]
 
-normalization = ["base", "raw", "Facenet", "Facenet2018", "VGGFace", "VGGFace2", "ArcFace"]
 
 metrics = ["cosine", "euclidean", "euclidean_l2"]
 
@@ -37,12 +36,11 @@ models = [
 ]
 
 class DetectFaces:
-    def __init__(self, cap_dev=0, model: int = 0, metric: int = 0, backend: int = 0, normalize: int = 0, threshold=0.3):
+    def __init__(self, cap_dev=0, model: int = 0, metric: int = 0, backend: int = 0, threshold=0.3):
         self.cap = cv2.VideoCapture(cap_dev)
         self.model = models[model]
         self.metric = metrics[metric]
         self.backend = backends[backend]
-        self.normalize = normalization[normalize]
         self.threshold = threshold
         self.known_embeddings = []
 
@@ -50,7 +48,14 @@ class DetectFaces:
         self.known_embeddings = [(new_name if name == old_name else name, x) for name, x in self.known_embeddings]
 
     def del_user(self, rm_name: str):
+        print(f'removing {rm_name}')
         self.known_embeddings = [(name, x) for name, x in self.known_embeddings if name != rm_name]
+
+    def add_embedding(self, img_name: str, embedding):
+        for name, emb in self.known_embeddings:
+            if(name == img_name):
+                print(f"Error user: {name} exists already")
+        self.known_embeddings.append((img_name, embedding))
 
     def add_image(self, name: str, img: np.ndarray):
         try:
@@ -63,17 +68,17 @@ class DetectFaces:
             )[0]['embedding']
             for img_name, emb in self.known_embeddings:
                 if(img_name == name):
-                    combined = np.mean([embedding, emb], axis=0)
+                    combined = np.mean([embedding, emb], axis=0).tolist()
                     self.known_embeddings.remove((img_name, emb))
-                    self.known_embeddings.append((img_name, combined.tolist()))
+                    self.known_embeddings.append((img_name, combined))
                     print(f"image added to: {name}")
-                    return True
+                    return combined
             self.known_embeddings.append((name, embedding))
             print(f"created: {name} and added image")
-            return True
+            return embedding
         except Exception as e:
             print(f"could not add image: {e}")
-            return False
+            return None
 
     def get_frame(self):
         ret, frame_rgb = self.cap.read()
@@ -123,17 +128,17 @@ class DetectFaces:
 
             for known_name, known_embedding in self.known_embeddings:
                 try:
-                    verify = DeepFace.verify(
-                        img1_path=embedding,
-                        img2_path=known_embedding,
-                        model_name=self.model,
-                        distance_metric=self.metric,
-                        threshold = self.threshold,
-                        normalization = self.normalize,
-                        silent = True,
-                        enforce_detection=False,
-                    )
-                    print(verify['distance'])
+                    if(embedding and known_embedding):
+                        verify = DeepFace.verify(
+                            img1_path=embedding,
+                            img2_path=known_embedding,
+                            model_name=self.model,
+                            distance_metric=self.metric,
+                            threshold = self.threshold,
+                            normalization = 'Facenet',
+                            silent = True,
+                            enforce_detection=False,
+                        )
                     if(verify['verified'] == True):
                         color = (0, 255, 0)
                         name = known_name
@@ -153,7 +158,6 @@ class DetectFaces:
                 unknown_face_counter -= 0.2
 
             if not isknown:
-                print(unknown_face_counter)
                 unknown_face_counter += 1
 
             if unknown_face_counter >= counter_threshold:
