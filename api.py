@@ -150,10 +150,13 @@ def gen_frames():
     while True:
         frame, faces = rec.get_frame()
         current_in_frame = faces
+        user_id = None
         for name, face in faces:
             for z in name.split():
                 if z.isdigit():
                     user_id = int(z)
+            if user_id:
+                db_user = db.query(User).filter(User.id == user_id).first()
             if(name == "Unknown"):
                 max_id = db.query(func.max(User.id)).scalar() or 0
                 emb = rec.add_image(f'Unknown  {max_id+1}', face)
@@ -167,7 +170,6 @@ def gen_frames():
             elif face is not None:
                 print(f"adding new db image to user {user_id}")
                 try:
-                    db_user = db.query(User).filter(User.id == user_id).first()
                     _, buffer = cv2.imencode('.jpg', face)
                     image_data = base64.b64encode(buffer).decode('utf-8')
                     db_user.images.append(image_data)
