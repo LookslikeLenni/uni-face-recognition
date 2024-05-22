@@ -144,8 +144,8 @@ class DetectFaces:
                         name = known_name
                         isknown = True
                         if(verify['distance']>(self.threshold-(self.threshold/2.5))):
-                            current_faces.append((name, face_region))
                             self.add_image(name, face_region)
+                            current_faces.append((name, face_region))
                         else:
                             current_faces.append((name, None))
                         break

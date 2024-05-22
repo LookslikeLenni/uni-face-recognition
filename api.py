@@ -64,6 +64,8 @@ models = [
 
 model_used = 2
 
+current_in_frame = []
+
 rec = DetectFaces(
         model = model_used,
         metric = 0,
@@ -171,6 +173,8 @@ def gen_frames():
     db = SessionLocal()
     while True:
         frame, faces = rec.get_frame()
+        global current_in_frame 
+        current_in_frame = faces
         for name, face in faces:
             if(name == "Unknown"):
                 max_id = db.query(func.max(User.id)).scalar() or 0
@@ -247,6 +251,21 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.delete(db_user)
     db.commit()
     return {"msg": "User deleted"}
+
+@app.get("/current/", response_model=List[UserOut])
+def list_current(db: Session = Depends(get_db)):
+    user_ids = []
+    users = []
+    for name, face in current_in_frame:
+        print(name)
+        for z in name.split():
+            if z.isdigit():
+                user_ids.append(z)
+    for user_id in user_ids:
+        db_user = db.query(User).filter(User.id == user_id).first()
+        db_user.images = []
+        users.append(db_user)
+    return users
 
 @app.get("/users/", response_model=List[UserOut])
 def list_users(db: Session = Depends(get_db)):
