@@ -85,6 +85,12 @@ Below are the provided endpoints along with how to use them effectively:
 
 **Usage:** Specify both `user_id` and `image_index`.
 
+### `GET /current/`
+
+**Description:** Retrieves all users that are currently in frame.
+
+**Usage:** Connect to this endpoint from a client.
+
 ### `GET /video_feed`
 
 **Description:** Streams a live video feed that is processed to detect and recognize faces.

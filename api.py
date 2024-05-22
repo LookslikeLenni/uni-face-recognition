@@ -18,6 +18,7 @@ from os.path import join
 import cv2
 import numpy as np
 import sys
+import time
 
 from video_handler import DetectFaces
 
@@ -34,37 +35,9 @@ expected_embedding_sizes = {
     "GhostFaceNet": 512,
 }
 
-backends = [
-    'opencv', 
-    'ssd', 
-    'dlib', 
-    'mtcnn', 
-    'fastmtcnn',
-    'retinaface', 
-    'mediapipe',
-    'yolov8',
-    'yunet',
-    'centerface',
-]
-
-metrics = ["cosine", "euclidean", "euclidean_l2"]
-
-models = [
-    "VGG-Face", 
-    "Facenet", 
-    "Facenet512", 
-    "OpenFace", 
-    "DeepFace", 
-    "DeepID", 
-    "ArcFace", 
-    "Dlib", 
-    "SFace",
-    "GhostFaceNet",
-]
-
-model_used = 2
-
+model_used = 0
 current_in_frame = []
+greeting_handler = {}
 
 rec = DetectFaces(
         model = model_used,
@@ -171,11 +144,16 @@ def get_user_name(user_id: int) -> str:
 
 def gen_frames():
     db = SessionLocal()
+    global current_in_frame 
+    global greeting_handler
+    orig = (50, 50)
     while True:
         frame, faces = rec.get_frame()
-        global current_in_frame 
         current_in_frame = faces
         for name, face in faces:
+            for z in name.split():
+                if z.isdigit():
+                    user_id = int(z)
             if(name == "Unknown"):
                 max_id = db.query(func.max(User.id)).scalar() or 0
                 emb = rec.add_image(f'Unknown  {max_id+1}', face)
@@ -187,9 +165,6 @@ def gen_frames():
                     db.commit()
               
             elif face is not None:
-                for z in name.split():
-                    if z.isdigit():
-                        user_id = z
                 print(f"adding new db image to user {user_id}")
                 try:
                     db_user = db.query(User).filter(User.id == user_id).first()
@@ -198,7 +173,20 @@ def gen_frames():
                     db_user.images.append(image_data)
                     db.commit()
                 except Exception as e:
-                    print(f"could not add image to user: {get_user_name(db_user.id)}, {e}")
+                    print(f"could not add image to user: {e}")
+
+            if user_id and (user_id not in greeting_handler):
+                greeting_handler[user_id] = time.time()
+
+        del_list = []
+        for user_id in greeting_handler:
+            elapsed = time.time()-greeting_handler[user_id]
+            if elapsed<10:
+                frame = cv2.putText(frame, db_user.greeting, orig, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+            elif elapsed>20:
+                del_list.append(user_id)
+        for user_id in del_list:
+            del greeting_handler[user_id]
 
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
@@ -358,11 +346,11 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 if __name__ == "__main__":
-
+    print(rec.model)
     db = SessionLocal()
     users = db.query(User).all()
     for user in users:
-        if not user.embedding or '-r' in sys.argv or len(user.embedding) != expected_embedding_sizes.get(models[model_used]):
+        if not user.embedding or '-r' in sys.argv or len(user.embedding) != expected_embedding_sizes[rec.model]:
             images = user.images
             for image in images:
                 img_bytes = base64.b64decode(image)
