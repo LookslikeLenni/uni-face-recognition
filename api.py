@@ -7,10 +7,11 @@ from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.types import TypeDecorator, TEXT
 from sqlalchemy.ext.mutable import MutableList
 from pydantic import BaseModel, Field
+from io import BytesIO, StringIO
 from typing import List
+from deepface import DeepFace
 import base64
 import json
-from io import BytesIO
 import zipfile
 import uvicorn
 from os import listdir
@@ -18,6 +19,7 @@ from os.path import join
 import cv2
 import numpy as np
 import sys
+import csv
 import time
 
 from video_handler import DetectFaces
@@ -37,7 +39,6 @@ expected_embedding_sizes = {
 
 model_used = 0
 current_in_frame = []
-greeting_handler = {}
 
 rec = DetectFaces(
         model = model_used,
@@ -145,7 +146,6 @@ def get_user_name(user_id: int) -> str:
 def gen_frames():
     db = SessionLocal()
     global current_in_frame 
-    global greeting_handler
     orig = (50, 50)
     while True:
         frame, faces = rec.get_frame()
@@ -176,19 +176,6 @@ def gen_frames():
                     db.commit()
                 except Exception as e:
                     print(f"could not add image to user: {e}")
-
-            if user_id and (user_id not in greeting_handler):
-                greeting_handler[user_id] = time.time()
-
-        del_list = []
-        for user_id in greeting_handler:
-            elapsed = time.time()-greeting_handler[user_id]
-            if elapsed<10:
-                frame = cv2.putText(frame, db_user.greeting, orig, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-            elif elapsed>20:
-                del_list.append(user_id)
-        for user_id in del_list:
-            del greeting_handler[user_id]
 
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
@@ -338,6 +325,56 @@ def get_user_image(user_id: int, image_index: int, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Image index out of range")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/export/", response_class=StreamingResponse)
+def export_users_images_csv(db: Session = Depends(get_db)):
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["user_id", "first_name", "last_name", "image_index", "image_data"])
+
+    users = db.query(User).all()
+    for user in users:
+        for idx, image_data in enumerate(user.images):
+            writer.writerow([user.id, user.first_name, user.last_name, idx, image_data])
+
+    output.seek(0)
+
+    return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=users_images.csv"})
+
+@app.get("/compare/{user_id_1}/{user_id_2}")
+def compare_users(user_id_1: int, user_id_2: int, db: Session = Depends(get_db)):
+    user1 = db.query(User).filter(User.id == user_id_1).first()
+    user2 = db.query(User).filter(User.id == user_id_2).first()
+    
+    if not user1:
+        raise HTTPException(status_code=404, detail="First user not found")
+    
+    if not user2:
+        raise HTTPException(status_code=404, detail="Second user not found")
+    
+    if not user1.images or len(user1.images) == 0:
+        raise HTTPException(status_code=404, detail="No images found for the first user")
+    
+    if not user2.images or len(user2.images) == 0:
+        raise HTTPException(status_code=404, detail="No images found for the second user")
+    
+    # Decode the first images of both users
+    image1_bytes = base64.b64decode(user1.images[0])
+    image2_bytes = base64.b64decode(user2.images[0])
+    
+    # Convert bytes to numpy arrays
+    image1_np = np.frombuffer(image1_bytes, np.uint8)
+    image2_np = np.frombuffer(image2_bytes, np.uint8)
+    
+    # Decode numpy arrays to images
+    image1 = cv2.imdecode(image1_np, cv2.IMREAD_COLOR)
+    image2 = cv2.imdecode(image2_np, cv2.IMREAD_COLOR)
+    
+    # Perform verification using DeepFace
+    result = DeepFace.verify(image1, image2, enforce_detection=False)
+    
+    return {"similarity": 1-result["distance"], "verified": result["verified"]}
 
 @app.get('/video_feed')
 def video_feed():
