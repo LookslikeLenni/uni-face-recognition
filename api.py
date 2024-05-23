@@ -242,6 +242,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"msg": "User deleted"}
 
+# List all users currently in frame
 @app.get("/current/", response_model=List[UserOut])
 def list_current(db: Session = Depends(get_db)):
     user_ids = []
