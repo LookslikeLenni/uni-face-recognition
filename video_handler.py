@@ -145,7 +145,7 @@ class DetectFaces:
                         color = (0, 255, 0)
                         name = known_name
                         isknown = True
-                        if(verify['distance']>(self.threshold-(self.threshold/2.5))):
+                        if(verify['distance']>(self.threshold-(self.threshold/4))):
                             self.add_image(name, face_region)
                             current_faces.append((name, face_region))
                         else:
@@ -166,7 +166,7 @@ class DetectFaces:
                 unknown_face_counter = 0
                 current_faces.append((name, face_region))
 
-            cv2.rectangle(frame_rgb, (x, y), (x + w, y + h), color, 4)
-            cv2.putText(frame_rgb, name, (x, y + h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+            cv2.rectangle(frame_rgb, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(frame_rgb, name, (x, y + h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 1)
 
         return (frame_rgb, current_faces)
