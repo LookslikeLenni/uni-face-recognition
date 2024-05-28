@@ -85,6 +85,12 @@ Below are the provided endpoints along with how to use them effectively:
 
 **Usage:** Specify both `user_id` and `image_index`.
 
+### `GET /time/{user_id}/
+
+**Description:** Retrieves a specific user's time he has spend in frame.
+
+**Usage:** Specify `user_id` and retrieve a float.
+
 ### `GET /compare/{user_id_1}/{user_id_2}/
 
 **Description:** compare the first image of each user returning 0-1 how similar they are
