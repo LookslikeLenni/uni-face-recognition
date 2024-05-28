@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends, UploadFile, File, 
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Text, func
+from sqlalchemy import create_engine, Column, Integer, String, Text, func, Float, PickleType
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.types import TypeDecorator, TEXT
 from sqlalchemy.ext.mutable import MutableList
@@ -21,6 +21,7 @@ import numpy as np
 import sys
 import csv
 import time
+import math
 
 from video_handler import DetectFaces
 
@@ -37,14 +38,15 @@ expected_embedding_sizes = {
     "GhostFaceNet": 512,
 }
 
-model_used = 0
+model_used =1 
 current_in_frame = []
+user_relation = {}
 
 rec = DetectFaces(
         model = model_used,
         metric = 0,
         backend = 8,
-        cap_dev = 0,
+        cap_dev = 1,
         threshold = 0.3
     )
 
@@ -86,6 +88,7 @@ class User(Base):
     greeting = Column(Text)
     images = Column(MutableList.as_mutable(Json), default=[])
     embedding = Column(MutableList.as_mutable(Json), default=[])
+    time_in_frame = Column(Float)
 
 Base.metadata.create_all(bind=engine)
 
@@ -143,27 +146,40 @@ def get_user_name(user_id: int) -> str:
     finally:
         db.close()
 
+def get_user_from_name(name: str):
+    user_id = None
+    for z in name.split():
+        if z.isdigit():
+            user_id = int(z)
+    return user_id
+
 def gen_frames():
     db = SessionLocal()
     global current_in_frame 
     orig = (50, 50)
+    past = time.time()
     while True:
         frame, faces = rec.get_frame()
+        # for FPS and also screentime
+        now = time.time()
+        ms = now-past
+        past = now
         current_in_frame = faces
         user_id = None
         for name, face in faces:
-            for z in name.split():
-                if z.isdigit():
-                    user_id = int(z)
+            user_id = get_user_from_name(name)
             if user_id:
                 db_user = db.query(User).filter(User.id == user_id).first()
+                #db_user.time_in_frame += ms
+                #db.commit()
+                
             if(name == "Unknown"):
                 max_id = db.query(func.max(User.id)).scalar() or 0
                 emb = rec.add_image(f'Unknown  {max_id+1}', face)
                 if emb:
                     _, buffer = cv2.imencode('.jpg', face)
                     image_data = base64.b64encode(buffer).decode('utf-8')
-                    new_user = User(first_name="Unknown", last_name="", greeting="Automatically added unknown face", images=[image_data], embedding=emb)
+                    new_user = User(first_name="Unknown", last_name="", greeting="Automatically added unknown face", images=[image_data], embedding=emb, time_in_frame = 0)
                     db.add(new_user)
                     db.commit()
               
@@ -177,6 +193,7 @@ def gen_frames():
                 except Exception as e:
                     print(f"could not add image to user: {e}")
 
+        cv2.putText(frame, f'{math.floor(1/ms)} FPS', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.8, (244, 23, 1), 2)
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
         yield (b'--frame\r\n' + b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
@@ -234,10 +251,9 @@ def list_current(db: Session = Depends(get_db)):
     user_ids = []
     users = []
     for name, face in current_in_frame:
-        print(name)
-        for z in name.split():
-            if z.isdigit():
-                user_ids.append(z)
+        user_id = get_user_from_name(name)
+        if user_id:
+            user_ids.append(user_id)
     for user_id in user_ids:
         db_user = db.query(User).filter(User.id == user_id).first()
         db_user.images = []
@@ -341,6 +357,34 @@ def export_users_images_csv(db: Session = Depends(get_db)):
     output.seek(0)
 
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=users_images.csv"})
+
+#@app.get("/timetogether/{user1}/{user2}/")
+#def get_user_time_together(user1: int, user2: int, db: Session = Depends(get_db)):
+#    db_user1 = db.query(User).filter(User.id == user1).first()
+#    db_user2 = db.query(User).filter(User.id == user2).first()
+#
+#    if not db_user1:
+#        raise HTTPException(status_code=404, detail="No User in db 1")
+#    
+#    if not db_user2:
+#        raise HTTPException(status_code=404, detail="No User in db 2")
+#
+#    if not db_user1.time_with_others:
+#        return 0
+#
+#    for i, (id, value) in enumerate(db_user1.time_with_others):
+#        if id == user2:
+#            _, ms = db_user.time_with_others[i]
+#            return ms
+#    else:
+#        return 0
+
+@app.get("/time/{user_id}")
+def get_user_time(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="user not found")
+    return user.time_in_frame
 
 @app.get("/compare/{user_id_1}/{user_id_2}")
 def compare_users(user_id_1: int, user_id_2: int, db: Session = Depends(get_db)):
