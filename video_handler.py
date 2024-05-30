@@ -7,9 +7,9 @@ import cv2
 physical_devices = tf.config.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
-    print("TensorFlow is configured to use the GPU.")
+    print("\033[92mTensorFlow is configured to use the GPU. \033[0m")
 else:
-    print("TensorFlow is not using the GPU.")
+    print("\033[93mTensorFlow is not using the GPU. \033[0m")
 
 unknown_face_counter = 0
 isknown = False
@@ -104,6 +104,8 @@ class DetectFaces:
             print(f"Error in face extraction: {e}")
 
         for face in faces:
+            if(face['confidence'] < 0.9):
+              break
             face_region = face['face']
             facial_area = face['facial_area']
 
