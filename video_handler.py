@@ -104,8 +104,6 @@ class DetectFaces:
             print(f"Error in face extraction: {e}")
 
         for face in faces:
-            if(face['confidence'] < 0.9):
-              break
             face_region = face['face']
             facial_area = face['facial_area']
 
