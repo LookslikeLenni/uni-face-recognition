@@ -1,6 +1,15 @@
 from deepface import DeepFace
+import tensorflow as tf
 import numpy as np
 import cv2
+
+# Verify TensorFlow is using the GPU
+physical_devices = tf.config.list_physical_devices('GPU')
+if len(physical_devices) > 0:
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    print("TensorFlow is configured to use the GPU.")
+else:
+    print("TensorFlow is not using the GPU.")
 
 unknown_face_counter = 0
 isknown = False
@@ -55,6 +64,7 @@ class DetectFaces:
         for name, emb in self.known_embeddings:
             if(name == img_name):
                 print(f"Error user: {name} exists already")
+                return
         self.known_embeddings.append((img_name, embedding))
 
     def add_image(self, name: str, img: np.ndarray):
@@ -71,10 +81,8 @@ class DetectFaces:
                     combined = np.mean([embedding, emb], axis=0).tolist()
                     self.known_embeddings.remove((img_name, emb))
                     self.known_embeddings.append((img_name, combined))
-                    print(f"image added to: {name}")
                     return combined
             self.known_embeddings.append((name, embedding))
-            print(f"created: {name} and added image")
             return embedding
         except Exception as e:
             print(f"could not add image: {e}")

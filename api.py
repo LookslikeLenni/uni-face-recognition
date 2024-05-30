@@ -20,8 +20,9 @@ import cv2
 import numpy as np
 import sys
 import csv
-import time
 import math
+from tqdm import tqdm
+import time
 
 from video_handler import DetectFaces
 
@@ -38,9 +39,10 @@ expected_embedding_sizes = {
     "GhostFaceNet": 512,
 }
 
-model_used =1 
+model_used = 0 
 current_in_frame = []
-user_relation = {}
+user_relation = []
+#user_relation = {}
 
 rec = DetectFaces(
         model = model_used,
@@ -169,9 +171,12 @@ def gen_frames():
         for name, face in faces:
             user_id = get_user_from_name(name)
             if user_id:
+                for other_name, face in faces:
+                    if(other_name != name):
+                        user_relation[get_user_from_name(name)][get_user_from_name(other_name)]
                 db_user = db.query(User).filter(User.id == user_id).first()
-                #db_user.time_in_frame += ms
-                #db.commit()
+                db_user.time_in_frame += ms
+                db.commit()
                 
             if(name == "Unknown"):
                 max_id = db.query(func.max(User.id)).scalar() or 0
@@ -358,26 +363,22 @@ def export_users_images_csv(db: Session = Depends(get_db)):
 
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=users_images.csv"})
 
-#@app.get("/timetogether/{user1}/{user2}/")
-#def get_user_time_together(user1: int, user2: int, db: Session = Depends(get_db)):
-#    db_user1 = db.query(User).filter(User.id == user1).first()
-#    db_user2 = db.query(User).filter(User.id == user2).first()
-#
-#    if not db_user1:
-#        raise HTTPException(status_code=404, detail="No User in db 1")
-#    
-#    if not db_user2:
-#        raise HTTPException(status_code=404, detail="No User in db 2")
-#
-#    if not db_user1.time_with_others:
-#        return 0
-#
-#    for i, (id, value) in enumerate(db_user1.time_with_others):
-#        if id == user2:
-#            _, ms = db_user.time_with_others[i]
-#            return ms
-#    else:
-#        return 0
+@app.get("/timetogether/{user1}/{user2}/")
+def get_user_time_together(user1: int, user2: int, db: Session = Depends(get_db)):
+    db_user1 = db.query(User).filter(User.id == user1).first()
+    db_user2 = db.query(User).filter(User.id == user2).first()
+
+    if not db_user1:
+        raise HTTPException(status_code=404, detail="No User in db 1")
+    
+    if not db_user2:
+        raise HTTPException(status_code=404, detail="No User in db 2")
+
+    time = user_relation[db_user1.id][db_user2.id]
+    if time:
+      return time
+    else:
+        return 0
 
 @app.get("/time/{user_id}")
 def get_user_time(user_id: int, db: Session = Depends(get_db)):
@@ -429,23 +430,24 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 if __name__ == "__main__":
-    print(rec.model)
     db = SessionLocal()
     users = db.query(User).all()
+
+    user_relation = [[0 for x in range(len(users))] for y in range(len(users))]
     for user in users:
+        print(f"adding embedding for {get_user_name(user.id)}:")
         if not user.embedding or '-r' in sys.argv or len(user.embedding) != expected_embedding_sizes[rec.model]:
             images = user.images
-            for image in images:
-                img_bytes = base64.b64decode(image)
+            for i in tqdm (range(len(images)), desc = "calculating embeddings...", ascii=False, ncols=75):
+                img_bytes = base64.b64decode(images[i])
                 img_array = np.frombuffer(img_bytes, dtype=np.uint8)
                 img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
                 emb = rec.add_image(get_user_name(user.id), img)
                 if(emb):
                     user.embedding = emb
-                print(f'added image for user: {get_user_name(user.id)}')
         else:
             rec.add_embedding(get_user_name(user.id), user.embedding) 
-            print(f'added embedding for user: {get_user_name(user.id)}')
+            print("\tadded precomputed embedding from db")
     db.commit()
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
