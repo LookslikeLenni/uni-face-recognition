@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends, UploadFile, File, 
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Text, func, Float, PickleType
+from sqlalchemy import create_engine, Column, Integer, String, Text, func, Float, PickleType, and_
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.types import TypeDecorator, TEXT
 from sqlalchemy.ext.mutable import MutableList
@@ -23,6 +23,7 @@ import csv
 import math
 from tqdm import tqdm
 import time
+import atexit
 
 from video_handler import DetectFaces
 
@@ -41,8 +42,7 @@ expected_embedding_sizes = {
 
 model_used = 0 
 current_in_frame = []
-user_relation = []
-#user_relation = {}
+user_relation = {}
 
 rec = DetectFaces(
         model = model_used,
@@ -92,6 +92,13 @@ class User(Base):
     embedding = Column(MutableList.as_mutable(Json), default=[])
     time_in_frame = Column(Float)
 
+class UserRelation(Base):
+    __tablename__ = 'user_relations'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id_1 = Column(Integer)
+    user_id_2 = Column(Integer)
+    time_together = Column(Float)
+
 Base.metadata.create_all(bind=engine)
 
 # Pydantic models
@@ -122,6 +129,29 @@ class UserUpdate(BaseModel):
     first_name: str = Field(default=None, example="Jane")
     last_name: str = Field(default=None, example="Doe")
     greeting: str = Field(default=None, example="Hello, welcome to my updated profile!")
+
+def load_user_relation_from_db():
+    global user_relation
+    db = SessionLocal()
+    relations = db.query(UserRelation).all()
+    for relation in relations:
+        user_relation[(relation.user_id_1, relation.user_id_2)] = relation.time_together
+    db.close()
+
+def save_user_relation_to_db():
+    db = SessionLocal()
+    for (user_id_1, user_id_2), time_together in user_relation.items():
+        relation = db.query(UserRelation).filter(and_(
+            UserRelation.user_id_1 == user_id_1,
+            UserRelation.user_id_2 == user_id_2
+        )).first()
+        if relation:
+            relation.time_together = time_together
+        else:
+            new_relation = UserRelation(user_id_1=user_id_1, user_id_2=user_id_2, time_together=time_together)
+            db.add(new_relation)
+    db.commit()
+    db.close()
 
 def get_images_from_db():
     db = SessionLocal()
@@ -171,9 +201,13 @@ def gen_frames():
         for name, face in faces:
             user_id = get_user_from_name(name)
             if user_id:
-                for other_name, face in faces:
-                    if(other_name != name):
-                        user_relation[get_user_from_name(name)][get_user_from_name(other_name)]
+                for other_name, _ in faces:
+                    if(name != other_name):
+                        pair = (user_id, get_user_from_name(other_name))
+                        if pair in user_relation:  
+                          user_relation[pair] += ms
+                        else:
+                          user_relation[pair] = ms
                 db_user = db.query(User).filter(User.id == user_id).first()
                 db_user.time_in_frame += ms
                 db.commit()
@@ -374,9 +408,9 @@ def get_user_time_together(user1: int, user2: int, db: Session = Depends(get_db)
     if not db_user2:
         raise HTTPException(status_code=404, detail="No User in db 2")
 
-    time = user_relation[db_user1.id][db_user2.id]
-    if time:
-      return time
+    pair = (db_user1.id, db_user2.id)
+    if pair in user_relation:
+        return user_relation[pair]
     else:
         return 0
 
@@ -429,11 +463,15 @@ def video_feed():
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# Load user_relation on startup
+load_user_relation_from_db()
+
+# Save user_relation on exit
+atexit.register(save_user_relation_to_db)
+
 if __name__ == "__main__":
     db = SessionLocal()
     users = db.query(User).all()
-
-    user_relation = [[0 for x in range(len(users))] for y in range(len(users))]
     for user in users:
         print(f"adding embedding for {get_user_name(user.id)}:")
         if not user.embedding or '-r' in sys.argv or len(user.embedding) != expected_embedding_sizes[rec.model]:

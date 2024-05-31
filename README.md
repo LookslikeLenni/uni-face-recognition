@@ -85,11 +85,17 @@ Below are the provided endpoints along with how to use them effectively:
 
 **Usage:** Specify both `user_id` and `image_index`.
 
+### `GET /timetogether/{user1}/{user2}/
+
+**Description:** Retrieves the time the two users have spend in frame together.
+
+**Usage:** Specify `user1`, `user2` and retrieve a float in seconds.
+
 ### `GET /time/{user_id}/
 
 **Description:** Retrieves a specific user's time he has spend in frame.
 
-**Usage:** Specify `user_id` and retrieve a float.
+**Usage:** Specify `user_id` and retrieve a float in seconds.
 
 ### `GET /compare/{user_id_1}/{user_id_2}/
 
