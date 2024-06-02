@@ -13,7 +13,7 @@ Ensure you have Python 3.6+ installed on your system. You also need to have pip 
 
 Install all necessary Python packages by running the following command:
 
-    pip install fastapi uvicorn sqlalchemy opencv-python opencv-python-headless numpy python-multipart cmake jinja2 deepface tf-keras {tensorflow, tensorflow-metal or tensorflow-gpu} 
+    pip install fastapi uvicorn sqlalchemy opencv-python opencv-python-headless numpy python-multipart cmake jinja2 deepface tf-keras {tensorflow, tensorflow-metal or tensorflow-gpu} tqdm
 
 These packages include FastAPI for the web framework, Uvicorn for serving the application, SQLAlchemy for database operations, OpenCV for image processing, and other supporting libraries.
 
@@ -84,6 +84,30 @@ Below are the provided endpoints along with how to use them effectively:
 **Description:** Retrieves a specific image from a user's collection by index.
 
 **Usage:** Specify both `user_id` and `image_index`.
+
+### `GET /timetogether/{user1}/{user2}/`
+
+**Description:** Retrieves the time the two users have spend in frame together.
+
+**Usage:** Specify `user1`, `user2` and retrieve a float in seconds.
+
+### `GET /time/{user_id}/`
+
+**Description:** Retrieves a specific user's time he has spend in frame.
+
+**Usage:** Specify `user_id` and retrieve a float in seconds.
+
+### `GET /compare/{user_id_1}/{user_id_2}/`
+
+**Description:** compare the first image of each user returning 0-1 how similar they are
+
+**Usage:** Provide the `user_id_1` and `user_id_2`
+
+### `GET /export/`
+
+**Description:** Export the Table with `ID, FISTNAME, LASTNAME, IMAGEID, IMAGEDATA` as a python friendly csv
+
+**Usage:** Connect to this endpoint from a client.
 
 ### `GET /current/`
 

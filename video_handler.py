@@ -1,6 +1,15 @@
 from deepface import DeepFace
+import tensorflow as tf
 import numpy as np
 import cv2
+
+# Verify TensorFlow is using the GPU
+physical_devices = tf.config.list_physical_devices('GPU')
+if len(physical_devices) > 0:
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    print("\033[92mTensorFlow is configured to use the GPU. \033[0m")
+else:
+    print("\033[93mTensorFlow is not using the GPU. \033[0m")
 
 unknown_face_counter = 0
 isknown = False
@@ -55,6 +64,7 @@ class DetectFaces:
         for name, emb in self.known_embeddings:
             if(name == img_name):
                 print(f"Error user: {name} exists already")
+                return
         self.known_embeddings.append((img_name, embedding))
 
     def add_image(self, name: str, img: np.ndarray):
@@ -71,10 +81,8 @@ class DetectFaces:
                     combined = np.mean([embedding, emb], axis=0).tolist()
                     self.known_embeddings.remove((img_name, emb))
                     self.known_embeddings.append((img_name, combined))
-                    print(f"image added to: {name}")
                     return combined
             self.known_embeddings.append((name, embedding))
-            print(f"created: {name} and added image")
             return embedding
         except Exception as e:
             print(f"could not add image: {e}")
@@ -96,6 +104,8 @@ class DetectFaces:
             print(f"Error in face extraction: {e}")
 
         for face in faces:
+            if(face['confidence'] < 0.9):
+              break
             face_region = face['face']
             facial_area = face['facial_area']
 
@@ -143,7 +153,7 @@ class DetectFaces:
                         color = (0, 255, 0)
                         name = known_name
                         isknown = True
-                        if(verify['distance']>(self.threshold-(self.threshold/2.5))):
+                        if(verify['distance']>(self.threshold-(self.threshold/4))):
                             self.add_image(name, face_region)
                             current_faces.append((name, face_region))
                         else:
@@ -164,7 +174,7 @@ class DetectFaces:
                 unknown_face_counter = 0
                 current_faces.append((name, face_region))
 
-            cv2.rectangle(frame_rgb, (x, y), (x + w, y + h), color, 4)
-            cv2.putText(frame_rgb, name, (x, y + h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+            cv2.rectangle(frame_rgb, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(frame_rgb, name, (x, y + h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 1)
 
         return (frame_rgb, current_faces)
