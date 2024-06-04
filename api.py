@@ -48,7 +48,7 @@ rec = DetectFaces(
         model = model_used,
         metric = 0,
         backend = 8,
-        cap_dev = 1,
+        cap_dev = 0,
         threshold = 0.3
     )
 
@@ -489,4 +489,4 @@ if __name__ == "__main__":
             print("\tadded precomputed embedding from db")
     db.commit()
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

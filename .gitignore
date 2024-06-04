@@ -1,4 +1,4 @@
-echo "env/" >> .gitignore
+env
 
 user.db
 
