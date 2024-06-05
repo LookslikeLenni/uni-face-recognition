@@ -48,7 +48,7 @@ rec = DetectFaces(
         model = model_used,
         metric = 0,
         backend = 8,
-        cap_dev = 1,
+        cap_dev = 0,
         threshold = 0.3
     )
 
