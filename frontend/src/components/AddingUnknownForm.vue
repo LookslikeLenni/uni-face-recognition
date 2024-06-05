@@ -1,77 +1,17 @@
-<template>
-    <div>
-      <h1>New Faces</h1>
-        <div class="scrollable">
-            <ul style="display: flex; flex-wrap: wrap; list-style: none;">
-                <li
-                v-for="user in newUsers"
-                :key="user.id"
-                style="flex: 0 0 200px; margin: 10px;"
-                >
-                <img :src="getUserImageUrl(user.id, 0)" alt="User Image" class="user-image" />
-                <div>
-                    <p>{{ user.id }}</p>
-                    <h3>{{ user.first_name }} {{ user.last_name }}</h3>
-                    <p>{{ user.greeting }}</p>
-                </div>
-                <button class="delete" @click="deleteUser(user.id)">Delete</button>
-                <button class="selector" @click=selectUser(user)>Add</button>
-                <button class="merger" @click="this.merge=true; selectUser(user)">Merge</button>
-                
-                </li>
-            </ul>
-        </div>
-        <div v-if="selectedUserToAddEditOrMerge" class="modal">
-            <div class="modal-content">
-                <h2>Edit User</h2>
-                    <input v-model="selectedUserToAddEditOrMerge.first_name" placeholder="First Name">
-                    <input v-model="selectedUserToAddEditOrMerge.last_name" placeholder="Last Name">
-                    <input v-model="selectedUserToAddEditOrMerge.greeting" placeholder="Greeting">
-                <button @click="updateUser">Save</button>
-                <button @click="cancelEdit">Cancel</button>
-            </div>
-        </div>
-        <div v-if="merge" class="modal">
-            <div class="modal-content">
-                <h2>Add Image to User</h2>
-                <select v-model="selectedKnownUser">
-                    <option disabled value="">Please select a known user</option>
-                    <option v-for="user in knownUsers" :key="user.id" :value="user">{{ user.first_name }} {{ user.last_name }}</option>
-                </select>
-                <button @click="mergeImage(selectedKnownUser)">Merge</button>
-                <button @click="cancelMerge">Cancel</button>
-            </div>
-        </div>
-        <!-- mergeIamge function finish -->
-    </div>
-  </template>
-  
-  <script>
+<script>
   //note this is basically the same as KnownFaces.vue
   export default {
+    //Tag: Sync
+    props: ['users'],
     data() {
       return {
-        users: [],
         selectedUserToAddEditOrMerge: null,
         selectedKnownUser: null,
         merge: false
       };
     },
-    mounted() {
-      this.fetchUsers();
-    },
+    
     methods: {
-        async fetchUsers() {
-            try {
-                const response = await fetch('http://127.0.0.1:8000/users');
-                const data = await response.json();
-                //console.log('Fetched users:', data);
-                this.users = Array.isArray(data) ? data : [];
-                //console.log('Users in component:', this.users);
-            } catch (error) {
-                console.error('Error fetching users:', error);
-            }
-        },
         getUserImageUrl(userId, imageIndex) {
             return `http://127.0.0.1:8000/users/${userId}/images/${imageIndex}/`;
         },
@@ -111,6 +51,7 @@
                 if (response.ok) {
                     this.fetchUsers();
                     this.selectedUserToAddEditOrMerge = null;
+                    
                 } else {
                     console.error('Failed to update user');
                 }
@@ -178,6 +119,56 @@
     }
   };
   </script>
+
+<template>
+    <div>
+      <h1>New Faces</h1>
+        <div class="scrollable">
+            <ul style="display: flex; flex-wrap: wrap; list-style: none;">
+                <li
+                v-for="user in newUsers"
+                :key="user.id"
+                style="flex: 0 0 200px; margin: 10px;"
+                >
+                <img :src="getUserImageUrl(user.id, 0)" alt="User Image" class="user-image" />
+                <div>
+                    <p>{{ user.id }}</p>
+                    <h3>{{ user.first_name }} {{ user.last_name }}</h3>
+                    <p>{{ user.greeting }}</p>
+                </div>
+                <button class="delete" @click="deleteUser(user.id)">Delete</button>
+                <button class="selector" @click=selectUser(user)>Add</button>
+                <button class="merger" @click="this.merge=true; selectUser(user)">Merge</button>
+                
+                </li>
+            </ul>
+        </div>
+        <div v-if="selectedUserToAddEditOrMerge" class="modal">
+            <div class="modal-content">
+                <h2>Edit User</h2>
+                    <input v-model="selectedUserToAddEditOrMerge.first_name" placeholder="First Name">
+                    <input v-model="selectedUserToAddEditOrMerge.last_name" placeholder="Last Name">
+                    <input v-model="selectedUserToAddEditOrMerge.greeting" placeholder="Greeting">
+                <button @click="updateUser">Save</button>
+                <button @click="cancelEdit">Cancel</button>
+            </div>
+        </div>
+        <div v-if="merge" class="modal">
+            <div class="modal-content">
+                <h2>Add Image to User</h2>
+                <select v-model="selectedKnownUser">
+                    <option disabled value="">Please select a known user</option>
+                    <option v-for="user in knownUsers" :key="user.id" :value="user">{{ user.first_name }} {{ user.last_name }}</option>
+                </select>
+                <button @click="mergeImage(selectedKnownUser)">Merge</button>
+                <button @click="cancelMerge">Cancel</button>
+            </div>
+        </div>
+        <!-- mergeIamge function finish -->
+    </div>
+  </template>
+  
+  
   
   <style scoped>
   .user-image {
