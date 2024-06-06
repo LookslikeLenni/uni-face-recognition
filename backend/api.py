@@ -52,7 +52,7 @@ rec = DetectFaces(
         threshold = 0.3
     )
 
-templates = Jinja2Templates(directory=".")
+templates = Jinja2Templates(directory="backend/")
 
 app = FastAPI()
 
@@ -65,7 +65,7 @@ app.add_middleware(
 )
 
 # Database configuration
-DATABASE_URL = "sqlite:///./user.db"
+DATABASE_URL = "sqlite:///./backend/user.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -469,7 +469,7 @@ load_user_relation_from_db()
 # Save user_relation on exit
 atexit.register(save_user_relation_to_db)
 
-if __name__ == "__main__":
+def main():
     db = SessionLocal()
     users = db.query(User).all()
     for user in users:

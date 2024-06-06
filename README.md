@@ -25,7 +25,7 @@ This application uses SQLite as the database, which is a lightweight disk-based 
 
 To start the server, use the following command:
 
-    python3 api.py
+    python3 backend
 
 ## API Endpoints
 
