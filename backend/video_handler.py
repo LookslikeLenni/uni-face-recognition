@@ -88,6 +88,19 @@ class DetectFaces:
             print(f"could not add image: {e}")
             return None
 
+    def compare(self, embedding1, embedding2):
+        verify = DeepFace.verify(
+            img1_path=embedding1,
+            img2_path=embedding2,
+            model_name=self.model,
+            distance_metric=self.metric,
+            threshold = self.threshold,
+            normalization = 'Facenet',
+            silent = True,
+            enforce_detection=False,
+        )
+        return verify
+
     def get_frame(self):
         ret, frame_rgb = self.cap.read()
         if not ret:
