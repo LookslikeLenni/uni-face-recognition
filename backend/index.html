@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Video Feed and User Profiles</title>
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+      }
+      .video-container {
+          width: 60%;
+          margin: 20px;
+      }
+      .video-container img {
+          width: 100%;
+          height: auto;
+      }
+      .users-container {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-around;
+          width: 80%;
+      }
+      .user {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin: 10px;
+      }
+      .user img {
+          width: 100px;
+          height: 100px;
+          border-radius: 10%;
+          margin-bottom: 10px;
+      }
+  </style>
+</head>
+<body>
+    <h1>Upload Multiple Images</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+      <input type="hidden" name="user_id" value="1">
+      <input type="file" id="imagesInput" name="image_files" multiple>
+      <button type="submit">Upload Images</button>
+    </form>
+    <div class="video-container">
+        <img src="/video_feed" alt="Live Video Feed">
+    </div>
+    <div class="users-container" id="users">
+        <!-- Users will be loaded here by JavaScript -->
+    </div>
+
+    <script>
+      const form = document.getElementById('upload-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        try {
+          const response = await fetch(`/users/${formData.get('user_id')}/images/`, {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await response.json();
+          console.log(data);
+        } catch (error) {
+          console.error(error);
+        }
+      });
+      async function fetchUsers() {
+        try {
+            const response = await fetch('/users/');
+            const users = await response.json();
+            const usersContainer = document.getElementById('users');
+            usersContainer.innerHTML = ''; // Clear existing users
+
+            users.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user';
+                const img = document.createElement('img');
+                img.src = user.images.length > 0 ? `data:image/jpeg;base64,${user.images[0]}` : 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG-Image.png';
+                img.alt = user.first_name + ' ' + user.last_name + ' ' + user.id;
+
+                const name = document.createElement('p');
+                name.textContent = user.first_name + ' ' + user.last_name + ' ' + user.id;
+
+                userDiv.appendChild(img);
+                userDiv.appendChild(name);
+                usersContainer.appendChild(userDiv);
+            });
+        } catch (error) {
+            console.error('Failed to fetch users:', error);
+        }
+    }
+
+    fetchUsers();
+    setInterval(fetchUsers, 5000); // Refresh users every 5000 ms (5 seconds)
+    </script>
+</body>
+</html>
+
