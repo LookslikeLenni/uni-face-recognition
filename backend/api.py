@@ -16,6 +16,7 @@ import zipfile
 import uvicorn
 from os import listdir
 from os.path import join
+import os
 import cv2
 import numpy as np
 import sys
@@ -52,7 +53,10 @@ rec = DetectFaces(
         threshold = 0.3
     )
 
-templates = Jinja2Templates(directory="backend/")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
+templates = Jinja2Templates(directory=".")
 
 app = FastAPI()
 
@@ -65,7 +69,7 @@ app.add_middleware(
 )
 
 # Database configuration
-DATABASE_URL = "sqlite:///./backend/user.db"
+DATABASE_URL = "sqlite:///./user.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -489,3 +493,6 @@ def main():
     db.commit()
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+if __name__ == "__main__":
+  main()
