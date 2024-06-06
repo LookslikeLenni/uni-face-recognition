@@ -27,6 +27,11 @@ To start the server, use the following command:
 
     python3 backend
 
+To reload all the embeddings, use the following argument:
+
+    python3 backend -r
+
+
 ## API Endpoints
 
 Below are the provided endpoints along with how to use them effectively:
