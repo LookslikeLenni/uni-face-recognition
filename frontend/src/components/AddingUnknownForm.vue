@@ -89,13 +89,24 @@
         async mergeImage(selectedKnownUser) {
             if (!selectedKnownUser) {
                 console.error('No known user selected');
-            return;
+                return;
             }
             try {
                 let selectedUserToAddEditOrMergeID = this.selectedUserToAddEditOrMerge.id;
                 const formData = new FormData();
-                const blob = await this.getFirstUserImage(selectedUserToAddEditOrMergeID);
-                formData.append('image_files', blob, 'image.jpg'); // 'image.jpg' is the filename, replace it with the actual filename if available
+                const imageCount = this.selectedUserToAddEditOrMerge.images.length; // Use the length of the images array
+
+                if (!imageCount) {
+                    console.error('No images found for user');
+                    return;
+                }
+
+                for (let i = 0; i < imageCount; i++) {
+                    const imageUrl = this.getUserImageUrl(selectedUserToAddEditOrMergeID, i);
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    formData.append('image_files', blob, `image${i}.jpg`); // 'image.jpg' is the filename, replace it with the actual filename if available
+                }
 
                 console.log('Selected known user id:', selectedKnownUser.id);
                 const response = await fetch(`http://127.0.0.1:8000/users/${selectedKnownUser.id}/images/`, {
@@ -103,19 +114,19 @@
                     body: formData
                 });
                 if (response.ok) {
-                    console.log('Image added to user');
+                    console.log('Images added to user');
                     
                     this.deleteUser(selectedUserToAddEditOrMergeID, false); //false = for not asking for confirmation pop up
                     this.$emit('reload-components');
                     this.cancelMerge();
                     this.cancelEdit();
                 } else {
-                    console.error('Failed to add image to user');
+                    console.error('Failed to add images to user');
                 }
-                } catch (error) {
-                    console.error('Error adding image to user:', error);
+            } catch (error) {
+                console.error('Error adding images to user:', error);
             }
-        }
+        },
     },
     computed: {
         newUsers() {
@@ -130,7 +141,7 @@
 
 <template>
     <div>
-      <h1>New Faces</h1>
+      <h2>Spotted:</h2>
         <div class="scrollable">
             <ul style="display: flex; flex-wrap: wrap; list-style: none;">
                 <li

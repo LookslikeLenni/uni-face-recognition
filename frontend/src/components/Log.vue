@@ -6,7 +6,7 @@ def list_current(db: Session = Depends(get_db)): */
 export default {
     data() {
         return {
-            logs: [],
+            logs: [],   // rename to toLog, because its the current list...
             intervalId: null
         };
     },
@@ -22,7 +22,7 @@ export default {
             try {
                 const response = await fetch('http://127.0.0.1:8000/current/');
                 const data = await response.json();
-                console.log('Fetched logs:', data);
+                //console.log('Fetched logs:', data);
 
                 // Add a timestamp to each log
                 const logsWithTimestamps = data.map(log => ({
@@ -43,7 +43,7 @@ export default {
 </script>
 
 <template>
-    <div>
+    <div class="scrollable-table">
         <h2>Current Logs</h2>
         <table class="logs">
             <thead>
@@ -67,11 +67,15 @@ export default {
 
 
 <style scoped>
+.scrollable-table {
+    max-height: 400px; /* Adjust as needed */
+    width: 500px; 
+    overflow-y: auto;
+  }
 .logs {
     width: 100%;
     border-collapse: collapse;
     height: 400px;
-    overflow-y: auto;
     color: #ffffff;
     
 }

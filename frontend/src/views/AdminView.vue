@@ -38,10 +38,27 @@ export default {
 </script>
 
 <template>
-    <div class="Admin">
-      <h1>This is an Admin page</h1>
-    </div>
-    <KnownFaces :users="users" />
-    <AddingUnknownForm :users="users" @reload-components="reloadBothComponents" />
-    <Log />
+  <div class="admin-container">
+      <div class="top-section">
+          <KnownFaces :users="users" @reload-components="reloadBothComponents" />
+          <AddingUnknownForm :users="users" @reload-components="reloadBothComponents" />
+      </div>
+      <div>
+          <Log />
+      </div>
+  </div>
 </template>
+
+<style scoped>
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.top-section {
+    display: flex;
+    justify-content: space-between;
+}
+</style>
+

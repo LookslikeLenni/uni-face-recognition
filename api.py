@@ -49,7 +49,7 @@ rec = DetectFaces(
         metric = 0,
         backend = 8,
         cap_dev = 0,
-        threshold = 0.3
+        threshold = 0.5
     )
 
 templates = Jinja2Templates(directory=".")

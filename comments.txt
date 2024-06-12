@@ -1,0 +1,33 @@
+ToDo: Show All images + merge is still not 100%
+
+Daily:
+
+Set Police shit...?
+
+env/Scripts/Activate
+
+python api.py
+
+//press STRG + c
+
+deactivate
+
+
+For Frontend:
+
+    npm run dev
+
+
+For Backend:
+
+Init:
+python 3.8.10
+
+py -3.8 venv env
+
+pip blabla install "requirements.txt"
+
+
+Temp:
+
+

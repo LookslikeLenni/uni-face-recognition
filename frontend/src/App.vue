@@ -4,40 +4,38 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-
-	<div class="navbar-container">
-		<header>
-			<div class="navbar-div">
-
-				<nav class="navbar">
-					<RouterLink to="/admin">Admin</RouterLink>|
-					<RouterLink to="/">Home</RouterLink>|
-					<RouterLink to="/statistics">Stats</RouterLink>
-				</nav>
-			</div>
-		</header>
-		
-	</div>
-	<RouterView/>
-		
+    <div class="container">
+        <nav class="nav">
+            <RouterLink to="/admin">Admin</RouterLink>|
+            <RouterLink to="/">Home</RouterLink>|
+            <RouterLink to="/statistics">Stats</RouterLink>
+        </nav>
+        <div class="content">
+            <RouterView/>
+        </div>
+    </div>
 </template>
 
 <style scoped>
-.navbar-container {
-	display: flex;
-	justify-content: column;
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
 }
 
-.navbar-div {
-	display: flex;
-	justify-content: center;
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background: #252525;
 }
 
-.navbar {
-	display: flex;
-	justify-content: space-between;
-	width: fit-content;
-	background-color: #636363;
+.content {
+	width: 100%; /* Add this line */
+    margin-top: 50px; /* Adjust this value based on the height of your nav */
 }
-
 </style>

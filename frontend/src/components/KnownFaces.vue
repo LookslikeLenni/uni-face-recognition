@@ -6,7 +6,9 @@
     data() {
       return {
         selectedUser: null,
-        vieW: false
+        vieW: false,
+        currentPage: 0,
+        imagesPerPage: 69 
       };
     },
     /* mounted() {
@@ -26,7 +28,23 @@
             }
         }, */
         getUserImageUrl(userId, imageIndex) {
+            // Adjust the index based on the current page
+            imageIndex += this.currentPage * this.imagesPerPage;
             return `http://127.0.0.1:8000/users/${userId}/images/${imageIndex}/`;
+        },  
+        nextPage() {
+            if (this.currentPage === Math.ceil(this.selectedUser.images.length / this.imagesPerPage) - 1) {
+                this.currentPage = 0;
+            } else {
+                this.currentPage++;
+            }
+        },
+        prevPage() {
+            if (this.currentPage === 0) {
+                this.currentPage = Math.ceil(this.selectedUser.images.length / this.imagesPerPage) - 1;
+            } else {
+                this.currentPage--;
+            }
         },
         async deleteUser(userId) {
             try {
@@ -63,7 +81,7 @@
                     body: JSON.stringify(this.selectedUser)
                 });
                 if (response.ok) {
-                    this.fetchUsers();
+                    this.$emit('reload-components');
                     this.selectedUser = null;
                 } else {
                     console.error('Failed to update user');
@@ -75,6 +93,8 @@
         cancelEdit() {
             this.selectedUser = null;
             this.vieW = false;
+            this.currentPage = 0;
+
         },
     
     },
@@ -88,7 +108,7 @@
 
 <template>
     <div>
-      <h1>New Faces</h1>
+      <h2>Identified:</h2>
         <div class="scrollable">
             <ul style="display: flex; flex-wrap: wrap; list-style: none;">
                 <li
@@ -120,12 +140,16 @@
         </div>
         <div v-if="vieW&&selectedUser" class="modal">
             <div class="modal-content">
-                <h2>View Images</h2>
+                <button @click="cancelEdit" class="cancel-button-top-right">✖</button> 
+                <h2>View Images ({{ selectedUser.images.length }} total)</h2> 
                 <ul class="image-grid">
-                    <li v-for="(image, index) in selectedUser.images" :key="index">
-                        <img :src="getUserImageUrl(selectedUser.id, index)" alt="User Image" class="user-image" />
-                    </li>
-                </ul>          
+                <li v-for="(image, index) in selectedUser.images.slice(currentPage * imagesPerPage, (currentPage + 1) * imagesPerPage)" :key="index">
+                    <img :src="getUserImageUrl(selectedUser.id, index)" alt="User Image" class="user-image" />
+                </li>
+                </ul>
+                <p>Page {{ currentPage + 1 }} of {{ Math.ceil(selectedUser.images.length / imagesPerPage) }}</p> 
+                <button @click="prevPage">Previous Page</button> 
+                <button @click="nextPage">Next Page</button> 
                 <button @click="cancelEdit">Cancel</button>
             </div>
         </div>
@@ -135,13 +159,24 @@
 
   
   <style scoped>
-  .user-image {
+.cancel-button-top-right {
+    position: absolute;
+    top: 10px;
+    right: 10px; /* Change this */
+    background: none;
+    border: none;
+    color: rgb(255, 255, 255);
+    font-size: 1.5em;
+    cursor: pointer;
+}
+
+.user-image {
     width: 69px;
     height: 69px;
     object-fit: cover; /* Ensure the image covers the specified space without stretching */
-  }
+}
 
-  .modal {
+.modal {
     position: fixed;
     z-index: 1;
     left: 0;
@@ -153,6 +188,7 @@
 }
 
 .modal-content {
+    position: relative;
     background-color: #777777;
     margin: 15% auto;
     padding: 20px;

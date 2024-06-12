@@ -10,15 +10,22 @@ export default {
 </script>
 
 <template>
-    <img class="video-feed" :src="videoUrl" alt="Live Feed" />
+    <div class="center-div">
+        <img class="video-feed" :src="videoUrl" alt="Live Feed" />
+    </div>
 </template>
 
 <style scoped>
-
-.video-feed {
-    border: 1px solid black;
-    width: 900;
-    height: auto;
+.center-div {
+    width: 100%;
+    overflow: auto; /* or 'scroll' if you want to always show scrollbars */
+    text-align: center; /* centers inline or inline-block elements */
 }
 
+.video-feed {
+    display: inline-block;
+    border: 1px solid rgb(255, 255, 255);
+    width: 90%;
+    height: auto;
+}
 </style>
