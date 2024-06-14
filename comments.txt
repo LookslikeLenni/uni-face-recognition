@@ -1,16 +1,26 @@
-ToDo: Show All images + merge is still not 100%
+ToDo: 
 
-Daily:
+check my livechat.vue
+i want a small 
 
-Set Police shit...?
+Git Push:
 
-env/Scripts/Activate
+    cd C:\Users\lenna\Documents\Uni.SWP\finalrepo\datenschutz-adieu-gesichtserkennung
+    git add .
+    git commit -m "Your commit message"
+    // INSERT COMMENT!
+    git push origin 7-vue-backend-v04
 
-python api.py
+Daily Backend:
 
-//press STRG + c
+    Set Police shit...?
 
-deactivate
+    env/Scripts/Activate
+    python api.py
+
+    //press STRG + c
+
+    deactivate
 
 
 For Frontend:
@@ -18,14 +28,14 @@ For Frontend:
     npm run dev
 
 
-For Backend:
+Setup Backend:
 
-Init:
-python 3.8.10
+    Init:
+    python 3.8.10
 
-py -3.8 venv env
+    py -3.8 venv env
 
-pip blabla install "requirements.txt"
+    pip blabla install "requirements.txt"
 
 
 Temp:

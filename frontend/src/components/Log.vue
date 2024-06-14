@@ -1,67 +1,55 @@
 <script>
 /* @app.get("/current/", response_model=List[UserOut])
 def list_current(db: Session = Depends(get_db)): */
-
+import {  mapState, mapMutations, mapActions } from 'vuex';
 
 export default {
-    data() {
-        return {
-            logs: [],   // rename to toLog, because its the current list...
-            intervalId: null
-        };
+	data() {
+		return {
+		intervalId: null
+		};
+	},
+    computed: {
+        ...mapState('CurrentUsersStore', ['logs'])
     },
-    mounted() {
-        this.fetchLogs();
-        this.intervalId = setInterval(this.fetchLogs, 5000);
-    },
-    beforeDestroy() {
-        clearInterval(this.intervalId);
-    },
-    methods: {
-        async fetchLogs() {
-            try {
-                const response = await fetch('http://127.0.0.1:8000/current/');
-                const data = await response.json();
-                //console.log('Fetched logs:', data);
+	mounted() {
+		this.fetchLogs();
+		this.intervalId = setInterval(this.fetchLogs, 5000);
+	},
+	beforeDestroy() {
+		clearInterval(this.intervalId);
+	},
+	methods: {
+		...mapMutations('CurrentUsersStore', ['setLogs', 'addLog']),
+		...mapActions('CurrentUsersStore', ['fetchLogs']),
+		getUserImageUrl(userId, imageIndex) {
+			return `http://127.0.0.1:8000/users/${userId}/images/${imageIndex}/`;
+		},
 
-                // Add a timestamp to each log
-                const logsWithTimestamps = data.map(log => ({
-                    ...log,
-                    timestamp: new Date().toLocaleString(),
-                }));
-
-                this.logs = [...this.logs, ...logsWithTimestamps].slice(-100); // Keep only the last 100 logs
-            } catch (error) {
-                console.error(error);
-            }
-        },    
-        getUserImageUrl(userId, imageIndex) {
-            return `http://127.0.0.1:8000/users/${userId}/images/${imageIndex}/`;
-        },
-    }
+	}
 };
 </script>
 
 <template>
-    <div class="scrollable-table">
-        <h2>Current Logs</h2>
-        <table class="logs">
-            <thead>
-                <tr>
-                    <th>Picture</th>
-                    <th>Name</th>
-                    <th>Timestamp</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="log in logs.slice().reverse()" :key="log.id">
-                    <td><img :src="getUserImageUrl(log.id, 0)" alt="User Image" class="user-image" /></td>
-                    <td>{{ log.first_name }} {{ log.last_name }}</td>
-                    <td>{{ log.timestamp }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+  <div class="scrollable-table">
+    <h2>Current Logs</h2>
+    <table class="logs">
+      <thead>
+        <tr>
+          <th>Picture</th>
+          <th>Name</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="log in (logs || []).slice().reverse()" :key="log.id">
+          <td><img :src="getUserImageUrl(log.id, 0)" alt="User Image" class="user-image" /></td>
+          <td>{{ log.first_name }} {{ log.last_name }}</td>
+          <td>{{ log.timestamp }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 
 
