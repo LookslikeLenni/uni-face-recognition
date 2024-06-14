@@ -16,6 +16,7 @@ import zipfile
 import uvicorn
 from os import listdir
 from os.path import join
+import os
 import cv2
 import numpy as np
 import sys
@@ -51,6 +52,9 @@ rec = DetectFaces(
         cap_dev = 0,
         threshold = 0.5
     )
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 
 templates = Jinja2Templates(directory=".")
 
@@ -429,31 +433,14 @@ def compare_users(user_id_1: int, user_id_2: int, db: Session = Depends(get_db))
     
     if not user1:
         raise HTTPException(status_code=404, detail="First user not found")
-    
     if not user2:
         raise HTTPException(status_code=404, detail="Second user not found")
-    
-    if not user1.images or len(user1.images) == 0:
-        raise HTTPException(status_code=404, detail="No images found for the first user")
-    
-    if not user2.images or len(user2.images) == 0:
-        raise HTTPException(status_code=404, detail="No images found for the second user")
-    
-    # Decode the first images of both users
-    image1_bytes = base64.b64decode(user1.images[0])
-    image2_bytes = base64.b64decode(user2.images[0])
-    
-    # Convert bytes to numpy arrays
-    image1_np = np.frombuffer(image1_bytes, np.uint8)
-    image2_np = np.frombuffer(image2_bytes, np.uint8)
-    
-    # Decode numpy arrays to images
-    image1 = cv2.imdecode(image1_np, cv2.IMREAD_COLOR)
-    image2 = cv2.imdecode(image2_np, cv2.IMREAD_COLOR)
-    
-    # Perform verification using DeepFace
-    result = DeepFace.verify(image1, image2, enforce_detection=False)
-    
+    if not user1.embedding:
+        raise HTTPException(status_code=404, detail="no embedding for first user")
+    if not user2.embedding:
+        raise HTTPException(status_code=404, detail="no embedding for second user")
+
+    result = rec.compare(user1.embedding, user2.embedding)
     return {"similarity": 1-result["distance"], "verified": result["verified"]}
 
 @app.get('/video_feed')
@@ -470,7 +457,7 @@ load_user_relation_from_db()
 # Save user_relation on exit
 atexit.register(save_user_relation_to_db)
 
-if __name__ == "__main__":
+def main():
     db = SessionLocal()
     users = db.query(User).all()
     for user in users:
