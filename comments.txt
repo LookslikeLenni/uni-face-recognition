@@ -16,7 +16,7 @@ Daily Backend:
     Set Police shit...?
 
     env/Scripts/Activate
-    python api.py
+    python backend
 
     //press STRG + c
 
