@@ -34,7 +34,7 @@ export default {
     },
   },
   actions: {
-    async getGraphData({ state, commit, dispatch, rootState }) {
+    async getGraphData({ commit, dispatch, rootState }) {
       const nodes = [];
       const links = [];
 

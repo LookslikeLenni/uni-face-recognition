@@ -1,50 +1,96 @@
 <template>
   <div>
-    <button @click="test">Test</button>
-    <v-network-graph v-if="nodes.length && links.length" :nodes="nodes" :links="links" />
+    <v-network-graph 
+      v-if="nodes.length && links.length" 
+      :nodes="styledNodes" 
+      :links="styledLinks" 
+      
+    />
   </div>
 </template>
 
 <script>
-  import { VNetworkGraph } from "v-network-graph";
-  import "v-network-graph/lib/style.css";
-  import { mapState, mapActions } from "vuex";
+import { VNetworkGraph } from "v-network-graph";
+import "v-network-graph/lib/style.css";
+import { mapState, mapActions } from "vuex";
+import * as vNG from "v-network-graph"
 
-  export default {
-    components: {
-      VNetworkGraph,
+ const configs = vNG.defineConfigs({
+  node: {
+    selectable: true,
+    normal: {
+      radius: 10,
+      color: "#ffffff",
+      strokeColor: "#ff00dd",
+      strokeWidth: 3,
     },
-    computed: {
-      ...mapState('StatisticGraphStore', ['nodes', 'links']),
+    hover: {
+      radius: 14,
+      color: "#ffffff",
+      strokeColor: "#ff00dd",
+      strokeWidth: 3,
     },
-    methods: {
-      ...mapActions('StatisticGraphStore', ['getGraphData']),
-      async test() {
-        await this.getGraphData();
-        // Ensure that the state is updated before accessing it
-        this.$nextTick(() => {
-          console.log("Nodes:", this.nodes);
-          console.log("Links:", this.links);
-        });
-      },
+    label: {
+      visible: false,
     },
-  };
+    focusring: {
+      color: "#ff00dd30", // alpha
+    },
+  },
+  edge: {
+    normal: {
+      width: edge => (edge.animate ? 2 : 1),
+      color: "#ff00dd",
+      dasharray: edge => (edge.animate ? "4" : "0"),
+      animate: edge => !!edge.animate,
+    },
+    hover: {
+      color: "#ff00dd",
+    },
+  },
+}) 
+
+export default {
+  components: {
+    VNetworkGraph,
+  },
+  computed: {
+    ...mapState('StatisticGraphStore', ['nodes', 'links']),
+    styledNodes() {
+      return this.nodes.map(node => ({
+        ...node,
+        color: 'white',
+        label: node.label || '',  // Ensures label is present to style text
+      }));
+    },
+    styledLinks() {
+      return this.links.map(link => ({
+        ...link,
+        color: 'grey',
+        width: this.scaleLinkWidth(link.timeTogether),
+      }));
+    },
+  },
+  methods: {
+    ...mapActions('StatisticGraphStore', ['getGraphData']),
+    async fetchGraphData() {
+      await this.getGraphData();
+      this.$nextTick(() => {
+        console.log("Nodes:", this.styledNodes);
+        console.log("Links:", this.styledLinks);
+      });
+    },
+    scaleLinkWidth(timeTogether) {
+      // Adjust this function as needed for appropriate scaling
+      return Math.min(10, Math.max(1, timeTogether / 10));
+    },
+  },
+  created() {
+    this.fetchGraphData();
+  },
+};
 </script>
 
-<style>
-/* Add styles for v-network-graph components */
-.v-network-graph__node {
-  background-color: white;
-  color: white; /* Font color */
-  border: 2px solid grey; /* Node border color */
-}
+<style scoped>
 
-.v-network-graph__link {
-  stroke: grey; /* Link color */
-}
-
-/* Additional style adjustments if needed */
-.v-network-graph__label {
-  color: white; /* Font color for labels */
-}
 </style>
