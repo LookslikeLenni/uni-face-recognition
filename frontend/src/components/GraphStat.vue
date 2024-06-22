@@ -1,11 +1,16 @@
 <template>
-  <div>
+  <div class="graph">
     <v-network-graph 
-      v-if="nodes.length && links.length" 
-      :nodes="styledNodes" 
-      :links="styledLinks" 
-      
-    />
+      v-if="Object.keys(nodes).length && Object.keys(links).length" 
+      :nodes="nodes" 
+      :edges="links" 
+      :configs="configs"
+    >
+      <template #edge-label="{ edge, ...slotProps }">
+        <v-edge-label :text="edge.label" align="center" vertical-align="above" v-bind="slotProps" />
+      </template>
+    </v-network-graph>
+
   </div>
 </template>
 
@@ -13,42 +18,7 @@
 import { VNetworkGraph } from "v-network-graph";
 import "v-network-graph/lib/style.css";
 import { mapState, mapActions } from "vuex";
-import * as vNG from "v-network-graph"
-
- const configs = vNG.defineConfigs({
-  node: {
-    selectable: true,
-    normal: {
-      radius: 10,
-      color: "#ffffff",
-      strokeColor: "#ff00dd",
-      strokeWidth: 3,
-    },
-    hover: {
-      radius: 14,
-      color: "#ffffff",
-      strokeColor: "#ff00dd",
-      strokeWidth: 3,
-    },
-    label: {
-      visible: false,
-    },
-    focusring: {
-      color: "#ff00dd30", // alpha
-    },
-  },
-  edge: {
-    normal: {
-      width: edge => (edge.animate ? 2 : 1),
-      color: "#ff00dd",
-      dasharray: edge => (edge.animate ? "4" : "0"),
-      animate: edge => !!edge.animate,
-    },
-    hover: {
-      color: "#ff00dd",
-    },
-  },
-}) 
+import * as vNG from "v-network-graph";
 
 export default {
   components: {
@@ -56,41 +26,57 @@ export default {
   },
   computed: {
     ...mapState('StatisticGraphStore', ['nodes', 'links']),
-    styledNodes() {
-      return this.nodes.map(node => ({
-        ...node,
-        color: 'white',
-        label: node.label || '',  // Ensures label is present to style text
-      }));
-    },
-    styledLinks() {
-      return this.links.map(link => ({
-        ...link,
-        color: 'grey',
-        width: this.scaleLinkWidth(link.timeTogether),
-      }));
-    },
   },
   methods: {
     ...mapActions('StatisticGraphStore', ['getGraphData']),
+
     async fetchGraphData() {
       await this.getGraphData();
       this.$nextTick(() => {
-        console.log("Nodes:", this.styledNodes);
-        console.log("Links:", this.styledLinks);
+        console.log("Nodes:", JSON.stringify(this.nodes, null, 2));
+        console.log("Links:", JSON.stringify(this.links, null, 2));
       });
-    },
-    scaleLinkWidth(timeTogether) {
-      // Adjust this function as needed for appropriate scaling
-      return Math.min(10, Math.max(1, timeTogether / 10));
     },
   },
   created() {
     this.fetchGraphData();
+    this.configs = vNG.defineConfigs({
+      node: {
+        selectable: true,
+        normal: {
+          radius: 20,
+          color: "red",
+        },
+        hover: {
+          radius: 22,
+        },
+        label: {
+          show: true,
+          color: "white",
+          fontSize: 12,
+        },
+      },
+      edge: {
+        normal: {
+          color: "brown",
+          width: 1,
+          
+        },
+        hover: {
+          color: "yellow",
+          width: 2,
+          label: edge => edge.width,
+        },
+      },
+    });
   },
 };
 </script>
 
 <style scoped>
-
+.graph {
+  width: 800px;
+  height: 600px;
+  border: 1px solid #000;
+}
 </style>

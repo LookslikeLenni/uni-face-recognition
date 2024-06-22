@@ -31,7 +31,7 @@ export default {
     },
 
     actions: {
-        async fetchCurrents({ commit, dispatch, state }) {
+        async fetchCurrents({ dispatch  }) {
             try {
                 const response = await fetch('http://127.0.0.1:8000/current/');
                 if (!response.ok) {

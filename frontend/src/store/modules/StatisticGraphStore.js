@@ -35,31 +35,56 @@ export default {
   },
   actions: {
     async getGraphData({ commit, dispatch, rootState }) {
-      const nodes = [];
-      const links = [];
-
+      const nodes = {};
+      const links = {};
+      const nodeMap = {};
+    
       if (!rootState.users || rootState.users.length === 0) {
         await dispatch('fetchUsers', null, { root: true });
       }
-
+    
       const users = rootState.users || [];
       const userCount = users.length;
-
+    
+      // First create all nodes and populate the nodeMap
       for (let i = 0; i < userCount; i++) {
         const response = await fetch(`http://127.0.0.1:8000/time/${users[i].id}`);
         const data = await response.json();
-        nodes.push({ id: users[i].id, name: users[i].first_name, timeInFrame: data });
+        const node = { id: users[i].id, name: users[i].first_name, timeInFrame: data};
+        nodes[`node${i + 1}`] = node;
+        nodeMap[users[i].id] = `node${i + 1}`;
+      }
+    
+      // Then create the links
+      const fetchLinks = [];
+      let edgeCount = 1;
+      for (let i = 0; i < userCount; i++) {
         for (let j = i + 1; j < userCount; j++) {
-          const responseTogether = await fetch(`http://127.0.0.1:8000/timetogether/${users[i].id}/${users[j].id}`);
-          const dataTogether = await responseTogether.json();
-          links.push({ source: users[i].id, target: users[j].id, timeTogether: dataTogether });
+          fetchLinks.push(
+            fetch(`http://127.0.0.1:8000/timetogether/${users[i].id}/${users[j].id}`)
+              .then(response => response.json())
+              .then(dataTogether => {
+                if (dataTogether && dataTogether > 0) {
+                  links[`edge${edgeCount}`] = {
+                    source: nodeMap[users[i].id],
+                    target: nodeMap[users[j].id],
+                    width: Math.min(10, Math.max(1, dataTogether / 10)),
+                    color: "red"
+                  };
+                  edgeCount++;
+                }
+              })
+          );
         }
       }
-
+    
+      await Promise.all(fetchLinks);
+    
       commit('setNodes', nodes);
       commit('setLinks', links);
       console.log('New graph data:', { nodes, links });
     }
+    
   }
 };
 
