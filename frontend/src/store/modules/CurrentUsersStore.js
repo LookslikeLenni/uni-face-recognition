@@ -5,7 +5,6 @@ export default {
         isMuted: false,
         logs: []
     },
-
     mutations: {
         addUser(state, user) {
             const userExists = state.currentUsers.some(existingUser => existingUser.id === user.id);
@@ -27,11 +26,9 @@ export default {
         addLog(state, log) {
             state.logs.push(log);
         },
-    
     },
-
     actions: {
-        async fetchCurrents({ dispatch  }) {
+        async fetchCurrents({ dispatch }) {
             try {
                 const response = await fetch('http://127.0.0.1:8000/current/');
                 if (!response.ok) {
@@ -63,26 +60,23 @@ export default {
         },
         async fetchLogs({ commit }) {
             try {
-                // console.log("Fetching logs");
-              const response = await fetch('http://127.0.0.1:8000/current/');
-              const data = await response.json();
+                const response = await fetch('http://127.0.0.1:8000/current/');
+                const data = await response.json();
         
-              // Add a timestamp to each log
-              const logsWithTimestamps = data.map(log => ({
-                ...log,
-                timestamp: new Date().toLocaleString(),
-              }));
+                const logsWithTimestamps = data.map(log => ({
+                    ...log,
+                    timestamp: new Date().toLocaleString(),
+                }));
         
-              // Commit each log individually
-            logsWithTimestamps.forEach(log => {
-                commit('addLog', log);
-            });
+                logsWithTimestamps.forEach(log => {
+                    commit('addLog', log);
+                });
             } catch (error) {
-              console.error(error);
+                console.error(error);
             }
         },
     },
     getters: {
-        isMuted:state =>  state.isMuted,
+        isMuted: state => state.isMuted,
     },
 };

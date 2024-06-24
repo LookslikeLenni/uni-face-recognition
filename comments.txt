@@ -1,7 +1,5 @@
 ToDo: 
 
-check my livechat.vue
-i want a small 
 
 Git Push:
 
@@ -13,7 +11,7 @@ Git Push:
 
 Daily Backend:
 
-    Set Police shit...?
+    Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
 
     env/Scripts/Activate
     python backend

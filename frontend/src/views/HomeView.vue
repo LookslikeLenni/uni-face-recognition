@@ -11,18 +11,27 @@ export default {
 </script>
 
 <template>
-    <div class="center-content">
-        <LiveFeed />
-        <LiveChat />
+  <div class="home-view">
+    <div class="stream-chat-container">
+      <LiveFeed />
+      <LiveChat />
     </div>
+  </div>
 </template>
 
-<style scoped>
-.center-content {
-    display: grid;
-    grid-template-columns: 190% auto;
-    justify-items: center;
-    align-items: center;
-    height: 100vh;
+<style>
+.stream-chat-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Assuming you want the live feed to take more space than the chat */
+.LiveFeed {
+  flex: 4; /* Adjust the ratio as needed */
+}
+
+.LiveChat {
+  flex: 1; /* Adjust the ratio as needed */
 }
 </style>
