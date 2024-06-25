@@ -11,6 +11,7 @@
   "dependencies": {
     "bootstrap": "^5.3.3",
     "d3": "^7.9.0",
+    "feather-icons": "^4.29.2",
     "v-network-graph": "^0.9.15",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0",

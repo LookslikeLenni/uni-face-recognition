@@ -28,7 +28,7 @@ export default createStore({
             catch (error) {
                 console.error(error);
             }
-        }
+        },
     },
     modules: {
         CurrentUsersStore,

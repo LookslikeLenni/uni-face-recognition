@@ -1,9 +1,11 @@
 <script>
 import GraphStat from '../components/GraphStat.vue';
+import LeaderBoard from '../components/LeaderBoard.vue';
 
 export default {
   components: {
-    GraphStat
+    GraphStat,
+    LeaderBoard
   }
 }
 </script>
@@ -12,6 +14,7 @@ export default {
   <div>
     <h1>Statistics View</h1>
     <GraphStat />
+    <LeaderBoard />
   </div>
 </template>
 

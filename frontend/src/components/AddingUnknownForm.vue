@@ -71,6 +71,7 @@
         cancelMerge() {
             this.merge = false;
             this.selectedKnownUser = null;
+            this.selectedUserToAddEditOrMerge = null;
         },
         async getFirstUserImage(userId) {
             try {
@@ -141,51 +142,67 @@
 
 <template>
     <div>
-      <h2>Spotted:</h2>
         <div class="scrollable">
-            <ul style="display: flex; flex-wrap: wrap; list-style: none;">
+            <ul class="d-flex flex-wrap list-unstyled">
                 <li
-                v-for="user in newUsers"
-                :key="user.id"
-                style="flex: 0 0 200px; margin: 10px;"
+                    v-for="user in newUsers"
+                    :key="user.id"
+                    class="m-2"
+                    style="flex: 0 0 200px;"
                 >
-                <img :src="getUserImageUrl(user.id, 0)" alt="User Image" class="user-image" />
-                <div>
-                    <p>{{ user.id }}</p>
-                    <h3>{{ user.first_name }} {{ user.last_name }}</h3>
-                    <p>{{ user.greeting }}</p>
-                </div>
-                <button class="delete" @click="deleteUser(user.id)">Delete</button>
-                <button class="selector" @click=selectUser(user)>Add</button>
-                <button class="merger" @click="this.merge=true; selectUser(user)">Merge</button>
-                
+                    <img :src="getUserImageUrl(user.id, 0)" alt="User Image" class="user-image img-thumbnail" />
+                    <div>
+                        <p>{{ user.id }}</p>
+                        <h3>{{ user.first_name }} {{ user.last_name }}</h3>
+                        <p>{{ user.greeting }}</p>
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm" @click="deleteUser(user.id)">Delete</button>
+                    <button class="btn btn-outline-primary btn-sm" @click="selectUser(user)">Add</button>
+                    <button class="btn btn-outline-secondary btn-sm" @click="this.merge=true; selectUser(user)">Merge</button>
                 </li>
             </ul>
         </div>
-        <div v-if="selectedUserToAddEditOrMerge" class="modal">
-            <div class="modal-content">
-                <h2>Edit User</h2>
-                    <input v-model="selectedUserToAddEditOrMerge.first_name" placeholder="First Name">
-                    <input v-model="selectedUserToAddEditOrMerge.last_name" placeholder="Last Name">
-                    <input v-model="selectedUserToAddEditOrMerge.greeting" placeholder="Greeting">
-                <button @click="updateUser">Save</button>
-                <button @click="cancelEdit">Cancel</button>
+        <div v-if="selectedUserToAddEditOrMerge" class="modal fade show" tabindex="-1" style="display: block;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Edit User</h2>
+                        <button type="button" class="btn-close" @click="cancelEdit"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input class="form-control mb-2" v-model="selectedUserToAddEditOrMerge.first_name" placeholder="First Name">
+                        <input class="form-control mb-2" v-model="selectedUserToAddEditOrMerge.last_name" placeholder="Last Name">
+                        <input class="form-control mb-2" v-model="selectedUserToAddEditOrMerge.greeting" placeholder="Greeting">
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-success" @click="updateUser">Save</button>
+                        <button class="btn btn-outline-secondary" @click="cancelEdit">Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
-        <div v-if="merge" class="modal">
-            <div class="modal-content">
-                <h2>Add Image to User</h2>
-                <select v-model="selectedKnownUser">
-                    <option disabled value="">Please select a known user</option>
-                    <option v-for="user in knownUsers" :key="user.id" :value="user">{{ user.first_name }} {{ user.last_name }}</option>
-                </select>
-                <button @click="mergeImage(selectedKnownUser)">Merge</button>
-                <button @click="cancelMerge">Cancel</button>
+        <div v-if="merge" class="modal fade show" tabindex="-1" style="display: block;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Add Image to User</h2>
+                        <button type="button" class="btn-close" @click="cancelMerge"></button>
+                    </div>
+                    <div class="modal-body">
+                        <select class="form-select" v-model="selectedKnownUser">
+                            <option disabled value="">Please select a known user</option>
+                            <option v-for="user in knownUsers" :key="user.id" :value="user">{{ user.first_name }} {{ user.last_name }}</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-warning" @click="mergeImage(selectedKnownUser)">Merge</button>
+                        <button class="btn btn-outline-secondary" @click="cancelMerge">Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
-        <!-- mergeIamge function finish -->
     </div>
-  </template>
+</template>
   
   
   

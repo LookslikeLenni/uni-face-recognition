@@ -6,9 +6,9 @@
       :edges="links" 
       :configs="configs"
     >
-      <template #edge-label="{ edge, ...slotProps }">
+      <!-- <template #edge-label="{ edge, ...slotProps }">
         <v-edge-label :text="edge.label" align="center" vertical-align="above" v-bind="slotProps" />
-      </template>
+      </template> -->
     </v-network-graph>
 
   </div>
@@ -32,10 +32,11 @@ export default {
 
     async fetchGraphData() {
       await this.getGraphData();
-      this.$nextTick(() => {
+      
+      /* this.$nextTick(() => {
         console.log("Nodes:", JSON.stringify(this.nodes, null, 2));
         console.log("Links:", JSON.stringify(this.links, null, 2));
-      });
+      }); */
     },
   },
   created() {

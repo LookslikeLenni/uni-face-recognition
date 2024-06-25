@@ -96,6 +96,23 @@
             this.currentPage = 0;
 
         },
+        downloadImagesZip(userId) {
+            fetch(`http://127.0.0.1:8000/users/${userId}/images/zip/`, {
+                method: 'GET',
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${this.selectedUser.first_name}-${this.selectedUser.last_name}-user-${userId}-images.zip`;
+                document.body.appendChild(a); // Append the element to work in Firefox
+                a.click();
+                a.remove(); // Clean up
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => console.error('Error downloading images zip:', error));
+        },
     
     },
     computed: {
@@ -108,53 +125,75 @@
 
 <template>
     <div>
-      <h2>Identified:</h2>
         <div class="scrollable">
-            <ul style="display: flex; flex-wrap: wrap; list-style: none;">
+            <ul class="d-flex flex-wrap list-unstyled">
                 <li
                     v-for="user in knownUsers"
                     :key="user.id"
-                    style="flex: 0 0 200px; margin: 10px;"
-                    >
-                    <img :src="getUserImageUrl(user.id, 0)" alt="User Image" class="user-image" />
+                    class="m-2"
+                    style="flex: 0 0 200px;"
+                >
+                    <img :src="getUserImageUrl(user.id, 0)" alt="User Image" class="user-image img-thumbnail" />
                     <div>
                         <p>{{ user.id }}</p>
                         <h3>{{ user.first_name }} {{ user.last_name }}</h3>
                         <p>{{ user.greeting }}</p>
                     </div>
-                    <button class="delete" @click="deleteUser(user.id)">Delete</button>
-                    <button class="selector" @click=selectUser(user)>Edit</button>
-                    <button class="viewImages" @click="selectUser(user);vieW = true" >Images</button>
+                    <button class="btn btn-outline-danger btn-sm" @click="deleteUser(user.id)">Delete</button>
+                    <button class="btn btn-outline-primary btn-sm" @click="selectUser(user)">Edit</button>
+                    <button class="btn btn-outline-secondary btn-sm" @click="selectUser(user); vieW = true">Images</button>
                 </li>
             </ul>
         </div>
-        <div v-if="selectedUser" class="modal">
-            <div class="modal-content">
-                <h2>Edit User</h2>
-                <input v-model="selectedUser.first_name" placeholder="First Name">
-                <input v-model="selectedUser.last_name" placeholder="Last Name">
-                <input v-model="selectedUser.greeting" placeholder="Greeting">
-                <button @click="updateUser">Save</button>
-                <button @click="cancelEdit">Cancel</button>
+        <div v-if="selectedUser" class="modal fade show" tabindex="-1" style="display: block;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Edit User</h2>
+                        <button type="button" class="btn-close" @click="cancelEdit"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input class="form-control mb-2" v-model="selectedUser.first_name" placeholder="First Name">
+                        <input class="form-control mb-2" v-model="selectedUser.last_name" placeholder="Last Name">
+                        <input class="form-control mb-2" v-model="selectedUser.greeting" placeholder="Greeting">
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-success" @click="updateUser">Save</button>
+                        <button class="btn btn-outline-secondary" @click="cancelEdit">Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
-        <div v-if="vieW&&selectedUser" class="modal">
-            <div class="modal-content">
-                <button @click="cancelEdit" class="cancel-button-top-right">✖</button> 
-                <h2>View Images ({{ selectedUser.images.length }} total)</h2> 
-                <ul class="image-grid">
-                <li v-for="(image, index) in selectedUser.images.slice(currentPage * imagesPerPage, (currentPage + 1) * imagesPerPage)" :key="index">
-                    <img :src="getUserImageUrl(selectedUser.id, index)" alt="User Image" class="user-image" />
-                </li>
-                </ul>
-                <p>Page {{ currentPage + 1 }} of {{ Math.ceil(selectedUser.images.length / imagesPerPage) }}</p> 
-                <button @click="prevPage">Previous Page</button> 
-                <button @click="nextPage">Next Page</button> 
-                <button @click="cancelEdit">Cancel</button>
+        <div v-if="vieW && selectedUser" class="modal fade show" tabindex="-1" style="display: block;">
+            <div class="modal-dialog" style="max-width: 90%;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">View Images ({{ selectedUser.images.length }} total)</h2>
+                        <button type="button" class="btn-close" @click="cancelEdit"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div v-for="(image, index) in selectedUser.images.slice(currentPage * imagesPerPage, (currentPage + 1) * imagesPerPage)" :key="index" class="col-6 col-md-4 col-lg-2 col-xl-1 mb-3">
+                                    <img :src="getUserImageUrl(selectedUser.id, index)" alt="User Image" class="img-thumbnail user-image" />
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-center">Page {{ currentPage + 1 }} of {{ Math.ceil(selectedUser.images.length / imagesPerPage) }}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-warning" @click="prevPage">Previous Page</button>
+                        <button class="btn btn-outline-warning" @click="nextPage">Next Page</button>
+                        <button class="btn btn-outline-secondary" @click="cancelEdit">Cancel</button>
+                        <button class="btn btn-outline-dark" @click="downloadImagesZip(selectedUser.id)">Download Images as Zip</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-  </template>
+</template>
+
+
   
 
   
@@ -198,7 +237,7 @@
 
 .scrollable {
     height: 400px; /* Adjust as needed */
-    width: 500px;
+    width: 100%;
     overflow-y: auto;
 }
 
