@@ -11,20 +11,24 @@ export default {
 </script>
 
 <template>
-  <div>
-    <h1>Statistics View</h1>
-    <GraphStat />
-    <LeaderBoard />
+  <div class="container">
+    <div class="content">
+      <GraphStat />
+      <LeaderBoard />
+    </div>
   </div>
-</template>
+</template> 
 
-
-<style>
-@media (min-width: 1024px) {
-  .about {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-  }
+<style scoped>
+.container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -35%);
 }
+
+.content > *:not(:last-child) {
+  margin-bottom: 20px; /* Adjust the gap size as needed */
+}
+
 </style>

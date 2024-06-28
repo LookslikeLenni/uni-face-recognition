@@ -1,51 +1,37 @@
-/* 
-@app.get("/timetogether/{user1}/{user2}/")
-def get_user_time_together(user1: int, user2: int, db: Session = Depends(get_db)):
- 
-@app.get("/time/{user_id}")
-def get_user_time(user_id: int, db: Session = Depends(get_db)):
-
-Graph with all users as nodes and edges scaling with time spent together
-*/
-
-// frontend/src/components/StatisticGraphStore.js
-
-
 /**
  * @typedef {Object} GraphState
  * @property {Object} graphData
  * @property {Array<{ id: number; name: string; size: number }>} graphData.nodes
- * @property {Array<{ source: number; target: number; value: number }>} graphData.links
+ * @property {Array<{ source: number; target: number; value: number }>} graphData.edges
  */
-
 
 export default {
   namespaced: true,
   state: {
     nodes: [],
-    links: [],
+    edges: [],
   },
   mutations: {
     setNodes(state, nodes) {
       state.nodes = nodes;
     },
-    setLinks(state, links) {
-      state.links = links;
+    setEdges(state, edges) {
+      state.edges = edges;
     },
   },
   actions: {
     async getGraphData({ commit, dispatch, rootState }) {
       const nodes = {};
-      const links = {};
+      const edges = {};
       const nodeMap = {};
-  
+
       if (!rootState.users || rootState.users.length === 0) {
         await dispatch('fetchUsers', null, { root: true });
       }
-  
+
       const users = rootState.users || [];
       const userCount = users.length;
-  
+
       // First create all nodes and populate the nodeMap
       for (let i = 0; i < userCount; i++) {
         const response = await fetch(`http://127.0.0.1:8000/time/${users[i].id}`);
@@ -58,22 +44,23 @@ export default {
         nodes[`node${i + 1}`] = node;
         nodeMap[users[i].id] = `node${i + 1}`;
       }
-  
-      // Then create the links
-      const fetchLinks = [];
+
+      // Then create the edges
+      const fetchEdges = [];
       let edgeCount = 1;
       for (let i = 0; i < userCount; i++) {
         for (let j = i + 1; j < userCount; j++) {
-          fetchLinks.push(
+          fetchEdges.push(
             fetch(`http://127.0.0.1:8000/timetogether/${users[i].id}/${users[j].id}`)
               .then(response => response.json())
               .then(dataTogether => {
                 if (dataTogether && dataTogether > 0) {
-                  links[`edge${edgeCount}`] = {
+                  edges[`edge${edgeCount}`] = {
                     source: nodeMap[users[i].id],
                     target: nodeMap[users[j].id],
-                    width: Math.min(10, Math.max(1, dataTogether / 10)),
-                    color: "red"
+                    width: Math.min(10, Math.max(1, dataTogether / 10)), // Scale width
+                    color: "red",
+                    timeTogether: Math.round(dataTogether * 100) / 100 // Save time together, rounded to 2 decimals
                   };
                   edgeCount++;
                 }
@@ -81,31 +68,24 @@ export default {
           );
         }
       }
-  
-      await Promise.all(fetchLinks);
-  
+
+      await Promise.all(fetchEdges);
+
       commit('setNodes', nodes);
-      commit('setLinks', links);
-      //console.log('New graph data:', { nodes, links });
+      commit('setEdges', edges);
     }
   },
-  
+
   getters: {
     getLeaderboard(state) {
       const leaderboard = [];
       for (const nodeKey in state.nodes) {
         if (state.nodes.hasOwnProperty(nodeKey)) {
           const node = state.nodes[nodeKey];
-          leaderboard.push({ id: node.id, name:node.name, timeInFrame: node.timeInFrame });
+          leaderboard.push({ id: node.id, name: node.name, timeInFrame: node.timeInFrame });
         }
       }
       return leaderboard.sort((a, b) => b.timeInFrame - a.timeInFrame);
     }
   }
 };
-
-
-    
-
-    
-

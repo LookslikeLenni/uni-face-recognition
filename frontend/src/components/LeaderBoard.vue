@@ -17,7 +17,7 @@
     computed: {
       ...mapGetters('StatisticGraphStore', ['getLeaderboard']),
       leaderboard() {
-        console.log('Leaderboard:', this.getLeaderboard);
+        //console.log('Leaderboard:', this.getLeaderboard);
         return this.getLeaderboard;
       }
     },

@@ -21,9 +21,8 @@ export default {
 
 <style>
 .stream-chat-container {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
+  display: grid;
+  place-items: center;
 }
 
 /* Assuming you want the live feed to take more space than the chat */

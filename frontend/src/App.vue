@@ -48,10 +48,10 @@ function updateIcons() {
 
 <style scoped>
 .container {
-    display: flex;
+    position: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
-    height: 100vh;
 }
 
 .nav {
