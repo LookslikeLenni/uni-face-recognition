@@ -237,7 +237,7 @@ export default {
 
 .modal-content {
     position: relative;
-    background-color: #777777;
+    background-color: #292929;
     margin: 15% auto;
     padding: 20px;
     border: 1px solid #ff0000;

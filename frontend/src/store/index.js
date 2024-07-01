@@ -5,10 +5,18 @@ import StatisticGraphStore from './modules/StatisticGraphStore'
 export default createStore({
     state: {
         users: [],
+        knownUsers: [],
+        unknownUsers: []
     },
     mutations: {
         setUsers(state, users) {
             state.users = users;
+        },
+        setKnownUsers(state, users) {
+            state.knownUsers = users;
+        },
+        setUnknownUsers(state, users) {
+            state.unknownUsers = users;
         }
     },
     actions: {
@@ -19,11 +27,12 @@ export default createStore({
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                /* console.log("New data:", data);
-                console.log("Data length:", data.length);
-                console.log("First user:", data[0]); */
                 commit('setUsers', data);
-                //console.log("commit went through");
+
+                const knownUsers = data.filter(user => user.first_name !== "Unknown" || user.last_name !== "");
+                const unknownUsers = data.filter(user => user.first_name === "Unknown" && user.last_name === "");
+                commit('setKnownUsers', knownUsers);
+                commit('setUnknownUsers', unknownUsers);
             }
             catch (error) {
                 console.error(error);
@@ -34,4 +43,4 @@ export default createStore({
         CurrentUsersStore,
         StatisticGraphStore,
     }
-})
+});

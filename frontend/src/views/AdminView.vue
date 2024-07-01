@@ -57,16 +57,23 @@ export default {
 <template>
   <div class="admin-container">
     <div class="top-section">
-      <div class="identified-section">
+      <div class="section identified-section">
         <KnownFaces :users="users" @reload-components="fetchUsers" />
+        <div class="section-title">Identified</div>
       </div>
       <button @click="exportCSV" class="export-button">
         <i data-feather="download"></i>
       </button>
     </div>
     <div class="bottom-section">
-      <AddingUnknownForm :users="users" @reload-components="fetchUsers" />
-      <Log />
+      <div class="section unknown-section">
+        <AddingUnknownForm :users="users" @reload-components="fetchUsers" />
+        <div class="section-title">Unknown</div>
+      </div>
+      <div class="section log-section">
+        <Log />
+        <div class="section-title">Logs</div>
+      </div>
     </div>
   </div>
 </template>
@@ -88,7 +95,7 @@ export default {
   position: relative;
 }
 
-.identified-section {
+.section {
   flex: 1;
   text-align: center;
   border: 1px solid black;
@@ -96,8 +103,7 @@ export default {
   overflow: hidden;
 }
 
-.identified-section::before {
-  content: "Identified";
+.section-title {
   position: absolute;
   top: 30px;
   left: 0;
@@ -137,24 +143,8 @@ export default {
 
 .bottom-section {
   display: flex;
-  text-align: center;
+  width: 100%;
   padding-top: 15px;
   justify-content: space-between;
-  width: 100%;
-  border: 1px solid black;
-  position: relative;
-  overflow: hidden;
-}
-
-.bottom-section::before {
-  content: "Unknown";
-  position: absolute;
-  top: 30px;
-  left: 0;
-  transform: translate(0, 0);
-  font-size: 6rem;
-  color: rgba(86, 86, 86, 0.3);
-  white-space: nowrap;
-  z-index: -1;
 }
 </style>

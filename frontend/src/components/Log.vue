@@ -32,7 +32,6 @@ export default {
 
 <template>
   <div class="scrollable-table">
-    <h2>Current Logs</h2>
     <table class="logs">
       <thead>
         <tr>
@@ -71,11 +70,11 @@ export default {
 .logs th,
 .logs td {
     padding: 8px;
-    border: 1px solid #5e5e5e;
+    border: 1px solid #292929;
 }
 
 .logs th {
-    background-color: #cccccc;
+    background-color: #292929;
     font-weight: bold;
 }
 

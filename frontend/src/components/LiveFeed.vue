@@ -9,20 +9,16 @@ export default {
 </script>
 
 <template>
-    <div class="center-div">
+    <div class="container-lg">
         <img class="video-feed" :src="videoUrl" alt="Live Feed" />
     </div>
 </template>
 
 <style scoped>
-/* .center-div {
-    width: 100%;
-    text-align: center;
-}
-
 .video-feed {
     width: 100%;
     height: auto;
-    border: 1px solid #fff;
-} */
+    border: 2px solid #632c25; 
+}
+
 </style>

@@ -2,88 +2,98 @@
 import { mapState, mapMutations, mapActions } from 'vuex';
 
 export default {
-	data() {
-		return {
-			messageQueue: [],
-			isSpeaking: false,
-			intervalId: null // Define intervalId in data
-		};
-	},
-	computed: {
-		...mapState('CurrentUsersStore', ['currentUsers', 'isMuted']),
-	},
-	methods: {
-		...mapActions('CurrentUsersStore', ['fetchCurrents']),
-		...mapMutations('CurrentUsersStore', ['SET_MUTE_STATUS']),
-		async fetchMessages() {
-			clearInterval(this.intervalId);
-			await this.fetchCurrents(); 
-			this.currentUsers.forEach(user => {
-				this.addMessageToQueue(user.greeting);
-			});
-			if (!this.isSpeaking) {
-				this.speakNextMessage();
-			}
-			this.intervalId = setInterval(this.fetchMessages, 10000);
-		},
-		addMessageToQueue(message) {
-			this.messageQueue.push(message);
-		},
-		speakNextMessage() {
-			if (this.messageQueue.length === 0) {
-				this.isSpeaking = false;
-				return;
-			}
-			this.isSpeaking = true;
-			const message = this.messageQueue.shift();
-			this.readGreeting(message);
-		},
-		readGreeting(greeting) {
-			console.log('readGreeting called with:', greeting); // Debugging line
-			if ('speechSynthesis' in window && !this.isMuted) {
-				const msg = new SpeechSynthesisUtterance(greeting);
-				msg.onend = () => {
-					this.speakNextMessage();
-				};
-				console.log("before");
-				window.speechSynthesis.speak(msg);
-				console.log("after");
-			} else {
-				console.log('Your browser does not support speech synthesis or the chat is muted.');
-			}
-		},
-		toggleMute() {
-			const newMuteStatus = !this.isMuted;
-			this.SET_MUTE_STATUS(newMuteStatus);
-			if (newMuteStatus) {
-				window.speechSynthesis.cancel();
-			} else {
-				this.speakNextMessage();
-			}
-		},
-	},
-	created() {
-		this.fetchMessages();
-	},
-	beforeDestroy() {
-		clearInterval(this.intervalId);
-		if ('speechSynthesis' in window) {
-			window.speechSynthesis.cancel();
-		}
-	},
+  data() {
+    return {
+      messageQueue: [],
+      isSpeaking: false,
+      intervalId: null,
+      lastMessageTime: null, // Track the last message time
+    };
+  },
+  computed: {
+    ...mapState('CurrentUsersStore', ['currentUsers', 'isMuted']),
+  },
+  methods: {
+    ...mapActions('CurrentUsersStore', ['fetchCurrents']),
+    ...mapMutations('CurrentUsersStore', ['SET_MUTE_STATUS']),
+	
+    async fetchMessages() {
+      clearInterval(this.intervalId);
+      await this.fetchCurrents();
+      const now = Date.now();
+      this.currentUsers.forEach(user => {
+        // Only add new messages based on a condition (e.g., timestamp)
+        if (!this.lastMessageTime || new Date(user.lastMessageTime) > this.lastMessageTime) {
+          this.addMessageToQueue(user.greeting);
+        }
+      });
+      this.lastMessageTime = now; // Update the last message time
+
+      if (!this.isSpeaking && !this.isMuted) { // Check if not muted before speaking
+        this.speakNextMessage();
+      }
+      this.intervalId = setInterval(this.fetchMessages, 10000);
+    },
+
+    addMessageToQueue(message) {
+      this.messageQueue.push(message);
+    },
+    speakNextMessage() {
+      if (this.messageQueue.length === 0 || this.isMuted) { // Check mute status here as well
+        this.isSpeaking = false;
+        return;
+      }
+      this.isSpeaking = true;
+      const message = this.messageQueue.shift();
+      this.readGreeting(message);
+    },
+    readGreeting(greeting) {
+      console.log('readGreeting called with:', greeting);
+      if ('speechSynthesis' in window && !this.isMuted) {
+        const msg = new SpeechSynthesisUtterance(greeting);
+        msg.onend = () => {
+          this.speakNextMessage();
+        };
+        window.speechSynthesis.speak(msg);
+      } else {
+        console.log('Your browser does not support speech synthesis or the chat is muted.');
+      }
+    },
+    toggleMute() {
+      const newMuteStatus = !this.isMuted;
+      this.SET_MUTE_STATUS(newMuteStatus);
+      if (newMuteStatus) {
+        window.speechSynthesis.cancel();
+        this.isSpeaking = false; // Ensure isSpeaking is set to false when muted
+      } else {
+        // Optionally, you might want to trigger speaking next message only under certain conditions
+        if (this.messageQueue.length > 0) {
+          this.speakNextMessage();
+        }
+      }
+    },
+  },
+  created() {
+    this.fetchMessages();
+  },
+  beforeDestroy() {
+    clearInterval(this.intervalId);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  },
 }
 </script>
 
 <template>
 	<div class="chat-container">
-	  Chat:
 	  <button class="mute-button" @click="toggleMute">{{ isMuted ? 'Unmute' : 'Mute' }}</button>
 	  <transition name="fade">
-		<div>
+		<div class="messages">
 		  <div v-for="user in currentUsers" 
 			   :key="user.id"
 			   class="message">
-			<p>{{ user.first_name }}: {{ user.greeting }}</p>
+			<p><strong>{{ user.first_name }}:</strong> {{ user.greeting }}</p>
 		  </div>
 		</div>
 	  </transition>
@@ -91,26 +101,56 @@ export default {
 </template>
 
 <style scoped>
-/* Existing styles */
-.fade-exit-active {
-  transition: opacity 1s;
-  opacity: 0;
+.chat-container {
+  background-color: transparent;
+  border: 2px solid #632c25; 
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  padding: 20px;
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto;
+  position: relative; /* This makes it a reference for the absolute positioning of the mute button */
+}
+
+.messages {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 20px;
 }
 
 .message {
-  border: 1px solid #000;
-}
-
-/* Position the mute button in the top right corner of the chat */
-.chat-container {
-  position: relative; /* This makes it a reference for the absolute positioning of the mute button */
+  background-color: #282828;
+  border-color:#a48484;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .mute-button {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 10px;
+  right: 10px;
+  background-color: #292929;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-/* You may need to adjust the .live-chat class to use .chat-container if it's not already defined */
+.mute-button:hover {
+  background-color: #632c25;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
 </style>
+

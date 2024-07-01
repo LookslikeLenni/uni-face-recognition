@@ -12,7 +12,7 @@ export default {
                 return;
             }
             state.currentUsers.push(user);
-            console.log('New currentUsers:', state.currentUsers);
+            // console.log('New currentUsers:', state.currentUsers);
         },
         removeUser(state, user) {
             state.currentUsers = state.currentUsers.filter((existingUser) => existingUser.id !== user.id);
@@ -35,7 +35,7 @@ export default {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log("New data:" + data);
+                //console.log("New data:" + data);
 
                 if (data.length === 0) {
                     return;
