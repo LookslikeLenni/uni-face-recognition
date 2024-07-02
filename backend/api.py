@@ -51,7 +51,7 @@ rec = DetectFaces(
         backend = 8,
         cap_dev = 0,
         threshold = 0.5
-    )
+)
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)

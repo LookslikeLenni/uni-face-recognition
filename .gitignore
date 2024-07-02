@@ -1,7 +1,4 @@
-user.db
-
+backend/user.db
+backend/env/
+backend/comments
 env/
-
-comments
-
-comments.txt

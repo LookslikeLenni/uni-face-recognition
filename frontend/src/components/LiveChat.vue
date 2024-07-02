@@ -102,7 +102,7 @@ export default {
 <template>
   <div class="chat-container">
     <button class="mute-button" @click="toggleMute">{{ isMuted ? 'Unmute' : 'Mute' }}</button>
-<!--     <button class="debug-button" @click="sendDebugMessage">Send Debug Message</button> -->
+    <button class="debug-button" @click="sendDebugMessage">Send Debug Message</button>
     <transition name="fade">
       <div class="messages">
         <div v-for="user in currentUsers" 
