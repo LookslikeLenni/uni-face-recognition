@@ -72,6 +72,20 @@ export default {
         }
       }
     },
+    // Method to add a debug message
+    sendDebugMessage() {
+      const debugUser = {
+        id: 'debug',
+        first_name: 'Debug',
+        greeting: 'This is a debug message',
+        lastMessageTime: new Date().toISOString(),
+      };
+      this.currentUsers.push(debugUser);
+      this.addMessageToQueue(debugUser.greeting);
+      if (!this.isSpeaking && !this.isMuted) {
+        this.speakNextMessage();
+      }
+    },
   },
   created() {
     this.fetchMessages();
@@ -86,18 +100,19 @@ export default {
 </script>
 
 <template>
-	<div class="chat-container">
-	  <button class="mute-button" @click="toggleMute">{{ isMuted ? 'Unmute' : 'Mute' }}</button>
-	  <transition name="fade">
-		<div class="messages">
-		  <div v-for="user in currentUsers" 
-			   :key="user.id"
-			   class="message">
-			<p><strong>{{ user.first_name }}:</strong> {{ user.greeting }}</p>
-		  </div>
-		</div>
-	  </transition>
-	</div>
+  <div class="chat-container">
+    <button class="mute-button" @click="toggleMute">{{ isMuted ? 'Unmute' : 'Mute' }}</button>
+<!--     <button class="debug-button" @click="sendDebugMessage">Send Debug Message</button> -->
+    <transition name="fade">
+      <div class="messages">
+        <div v-for="user in currentUsers" 
+             :key="user.id"
+             class="message">
+          <p><strong>{{ user.first_name }}:</strong> {{ user.greeting }}</p>
+        </div>
+      </div>
+    </transition>
+  </div>
 </template>
 
 <style scoped>
@@ -116,7 +131,8 @@ export default {
 .messages {
   max-height: 400px;
   overflow-y: auto;
-  margin-top: 20px;
+  margin-top: 35px; /* Added margin to the top to move the container down */
+  margin-right: 15%; /* Added margin to the right to prevent overlap */
 }
 
 .message {
@@ -128,7 +144,7 @@ export default {
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.mute-button {
+.mute-button, .debug-button {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -141,8 +157,12 @@ export default {
   transition: background-color 0.3s;
 }
 
-.mute-button:hover {
+.mute-button:hover, .debug-button:hover {
   background-color: #632c25;
+}
+
+.debug-button {
+  right: 80px; /* Adjusted position to the left of the mute button */
 }
 
 .fade-enter-active, .fade-leave-active {
@@ -153,4 +173,5 @@ export default {
   opacity: 0;
 }
 </style>
+
 

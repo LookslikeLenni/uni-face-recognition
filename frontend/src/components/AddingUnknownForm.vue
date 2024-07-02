@@ -138,7 +138,7 @@ export default {
         },
         addUserIdToCheckedList(userId) {
             this.listOfCheckedUserIds.push(userId);
-            console.log('List of checked user ids:', this.listOfCheckedUserIds);
+            //console.log('List of checked user ids:', this.listOfCheckedUserIds);
         },
         async compareAndGetMostSimilarUser(userId) {
             let mostSimilarUser = null;
@@ -222,6 +222,7 @@ export default {
                         <button class="btn btn-outline-secondary btn-sm" @click="this.merge=true; selectUser(user)">Merge</button>    
                     </div>
                     <div v-else>
+                        <p>{{ user.id }}</p>
                         <div v-if="similarityLoading">
                             <p>Loading...</p>
                         </div>
