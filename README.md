@@ -1,3 +1,10 @@
+![Screenshot 2024-07-02 184144](https://github.com/LookslikeLenni/uni-face-recognition/assets/93777813/cdd1a809-4f1a-4302-a23b-bddab5cc062a)
+![Screenshot 2024-07-02 184226](https://github.com/LookslikeLenni/uni-face-recognition/assets/93777813/6dd95775-2c35-45f2-866f-1de007c6dc3e)
+![Screenshot 2024-07-02 184433](https://github.com/LookslikeLenni/uni-face-recognition/assets/93777813/3a8742aa-ffe8-4e0f-81ae-c01e88b83b71)
+![Screenshot 2024-07-02 184304](https://github.com/LookslikeLenni/uni-face-recognition/assets/93777813/9a2507a7-2291-4a9e-b9a6-04abf09d0ba1)
+
+
+
 # Facial Recognition API
 
 This FastAPI application utilizes advanced face recognition techniques combined with a robust back-end system to manage user data and images. It supports a variety of operations, including user creation, image uploading, and retrieval of user details, making it versatile for applications requiring biometric functionality.
